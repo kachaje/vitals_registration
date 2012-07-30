@@ -1,0 +1,3 @@
+class BarcodesController < GenericBarcodesController
+
+end

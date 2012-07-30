@@ -1,0 +1,3 @@
+class DrugController < GenericDrugController
+
+end

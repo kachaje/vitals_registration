@@ -1,0 +1,4 @@
+class PatientIdentifiersController < GenericPatientIdentifiersController
+
+ 
+end

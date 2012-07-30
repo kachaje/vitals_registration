@@ -1,0 +1,2 @@
+class ConfigController < GenericConfigController
+end

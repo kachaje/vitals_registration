@@ -1,0 +1,23 @@
+production:
+   adapter: mysql
+   database: vitals_registration
+   username: root
+   password: admin
+   host: localhost
+
+development:
+  adapter: mysql
+  database: vitals_registration_development
+  username: root
+  password: admin
+  host: localhost
+
+test: &TEST
+  adapter: mysql
+  database: openmrs15
+  username: yamiko
+  password: bart
+  host: localhost
+
+cucumber:
+  <<: *TEST

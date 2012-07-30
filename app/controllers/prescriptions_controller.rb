@@ -1,0 +1,2 @@
+class PrescriptionsController < GenericPrescriptionsController
+end

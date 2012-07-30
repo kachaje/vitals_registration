@@ -1,0 +1,3 @@
+class ProgramsController < GenericProgramsController
+
+end

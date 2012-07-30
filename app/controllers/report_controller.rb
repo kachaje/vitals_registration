@@ -1,0 +1,4 @@
+class ReportController < GenericReportController
+
+
+end

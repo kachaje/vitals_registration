@@ -1,0 +1,16 @@
+production:
+ create_from_remote: no
+ use.user.selected.activities: yes
+
+development:
+ create_from_remote: no
+ use.user.selected.activities: yes
+ show.patient.confirmation: true
+
+test: &TEST
+ create_from_remote: no
+ use.user.selected.activities: yes
+ auto_set_appointment: true
+
+cucumber:
+  <<: *TEST

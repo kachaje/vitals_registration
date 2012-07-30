@@ -1,0 +1,3 @@
+class PersonNamesController < GenericPersonNamesController
+
+end

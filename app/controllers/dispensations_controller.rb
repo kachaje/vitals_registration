@@ -1,0 +1,3 @@
+class DispensationsController < GenericDispensationsController
+ 
+end
