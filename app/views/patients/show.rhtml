@@ -1,0 +1,95 @@
+<script type="text/javascript" language="javascript">
+  <!--
+  tt_cancel_show = "/clinic";
+  tt_cancel_destination = "/clinic";
+  //-->
+</script>
+
+<style type="text/css">
+  .table {
+    display: table;
+  }
+  .row {
+    display: table-row;
+  }
+
+  .cell {
+    display: table-cell;
+  }
+
+  #timeCtrl {
+    border-radius: 50px;
+    border: 1px solid #ccc;
+    width: 180px; 
+    height: 60px;
+    font-size: 36px; 
+    background-color: rgb(153, 238, 153); 
+    color: rgb(0, 0, 0); 
+    opacity: 0.95; 
+    z-index: 100; 
+    text-align: center;
+    -moz-user-select: none;
+  }
+
+  #nextTask {
+    border-radius: 50px;
+    border: 1px solid #ccc;
+    width: 260px;
+    height: 50px;
+    font-size: 18px;
+    background-color: #efc; 
+    color: rgb(0, 0, 0); 
+    opacity: 0.95; 
+    z-index: 100; 
+    text-align: center;
+    -moz-user-select: none;
+  }
+</style>
+<form id = 'dashboard' action=''>
+  <table cellpadding=10>
+    <tr>
+      <th colspan=2>Patient Dashboard</th>
+    </tr>
+    <tr>
+      <td>
+        <h1 id='project_name'>
+          <span style="color: #6281A7;">anc</span>
+        </h1>
+        <div id="custom_banner" path="/patients/custom_banner"></div>
+        <span id='patient_name'>
+          <%=  %>
+        </span>
+        <span id='patient_id'>
+          <%=  %>
+        </span>
+        <span id='patient_residence'>
+          <%=  %>
+        </span>
+        <span id='patient_age'>
+          <%=  %>
+        </span>
+        <span id='patient_gender'>
+          <%=  %>
+        </span>
+        <!--div id="patient_card">
+          <div value="AZT">Regimen</div>
+          <div value="No">On CPT?</div>
+        </div-->
+        <select id="links">
+          <option>Baby Demographics</option>
+          <option>Mother Demographics</option>
+          <option>Father Demographics</option>
+          <option>Birth Report</option>
+        </select>
+        <select id="tabs">
+          <option>Summary</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td align='center'>
+        <input type='submit' value='Finish' />
+      </td>
+    </tr>
+  </table>
+</form>

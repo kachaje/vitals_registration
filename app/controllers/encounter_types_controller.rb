@@ -1,38 +1,154 @@
-class EncounterTypesController < GenericEncounterTypesController
+class EncounterTypesController < ApplicationController
 
-  def index
-    role_privileges = RolePrivilege.find(:all,:conditions => ["role IN (?)", current_user_roles])
-    privileges = role_privileges.each.map{ |role_privilege_pair| role_privilege_pair["privilege"].humanize }
- 
-    @encounter_privilege_map = CoreService.get_global_property_value("encounter_privilege_map").to_s rescue ''
-    @encounter_privilege_map = @encounter_privilege_map.split(",")
-    @encounter_privilege_hash = {}
-
-    @encounter_privilege_map.each do |encounter_privilege|
-        @encounter_privilege_hash[encounter_privilege.split(":").last.squish.humanize] = encounter_privilege.split(":").first.squish.humanize
-    end
-
-    roles_for_the_user = []
-
-    privileges.each do |privilege|
-      roles_for_the_user  << @encounter_privilege_hash[privilege] if !@encounter_privilege_hash[privilege].nil?
-    end
-    roles_for_the_user = roles_for_the_user.uniq
-
-    # TODO add clever sorting
-    @encounter_types = EncounterType.find(:all).map{|enc|enc.name.gsub(/.*\//,"").gsub(/\..*/,"").humanize}
-    @available_encounter_types = Dir.glob(RAILS_ROOT+"/app/views/encounters/*.rhtml").map{|file|file.gsub(/.*\//,"").gsub(/\..*/,"").humanize}
-
-    @available_encounter_types -= @available_encounter_types - @encounter_types
-
-
-    @available_encounter_types = ((@available_encounter_types) - ((@available_encounter_types - roles_for_the_user) + (roles_for_the_user - @available_encounter_types)))
-    @available_encounter_types = @available_encounter_types.sort
+  def index 
+    @patient = Patient.find(params[:patient_id]) rescue nil
+    
+    @anc_patient = ANCService::ANC.new(@patient)
+    
+    @available_encounter_types = User.current_user.activities.reject{|activity| 
+      CoreService.get_global_property_value("disable_tasks").split(",").include?(activity)
+    } rescue current_user.activities 
+    
+    hiv_specs = [
+      "HIV Reception"
+    ]
+    
+    status = @anc_patient.hiv_status.downcase rescue "unknown"
+    
+    @available_encounter_types = @available_encounter_types - ["Registration", "View Reports"]
+    
+    @available_encounter_types = @available_encounter_types - hiv_specs if status != "positive"
     
   end
 
   def show
-  redirect_to "/encounters/new/#{params["encounter_type"].downcase.gsub(/ /,"_")}?#{params.to_param}" and return
+    # raise params.to_yaml
+    # art_link = GlobalProperty.find_by_property("art_link").property_value.gsub(/http\:\/\//, "") rescue nil
+    # anc_link = GlobalProperty.find_by_property("anc_link").property_value rescue nil
+
+    art_link = CoreService.get_global_property_value("art_link") rescue nil
+    anc_link = CoreService.get_global_property_value("anc_link") rescue nil
+
+    patient = Patient.find(params[:patient_id]) rescue nil
+
+    @patient = Patient.find(patient.id) rescue nil
+    @anc_patient = ANCService::ANC.new(@patient) rescue nil
+    
+    if !session[:token]
+      response = RestClient.post("http://#{art_link}/single_sign_on/get_token", 
+        {"login"=>session[:username], "password"=>session[:password]}) rescue nil
+          
+      if !response.nil?
+        response = JSON.parse(response)
+            
+        session[:token] = response["auth_token"]          
+      end
+             
+    end
+    
+    session.delete :datetime if session[:datetime].nil? || 
+      ((session[:datetime].to_date.strftime("%Y-%m-%d") rescue Date.today.strftime("%Y-%m-%d")) == Date.today.strftime("%Y-%m-%d"))
+        
+    paths = {
+      "Weight and Height" => "/encounters/new/vitals/?patient_id=#{patient.id}&weight=1&height=1",
+      
+      "TTV Vaccination" => "/prescriptions/ttv/?patient_id=#{patient.id}", 
+      
+      "BP" => "/encounters/new/vitals/?patient_id=#{patient.id}&bp=1", 
+      
+      "ANC Visit Type" => "/patients/visit_type/?patient_id=#{patient.id}", 
+      
+      "Obstetric History" => "/patients/obstetric_history/?patient_id=#{patient.id}",  
+      
+      "Medical History" => "/patients/medical_history/?patient_id=#{patient.id}",  
+      
+      "Surgical History" => "/patients/surgical_history/?patient_id=#{patient.id}",  
+      
+      "Social History" => "/patients/social_history/?patient_id=#{patient.id}", 
+      
+      "Lab Results" => "/encounters/new/lab_results/?patient_id=#{patient.id}",
+      
+      "ANC Examination" => "/patients/observations/?patient_id=#{patient.id}", 
+      
+      "Current Pregnancy" => "/patients/current_pregnancy/?patient_id=#{patient.id}", 
+      
+      "Manage Appointments" => "/encounters/new/appointment/?patient_id=#{patient.id}", 
+      
+      "Give Drugs" => "/prescriptions/give_drugs/?patient_id=#{patient.id}", 
+      
+      "Update Outcome" => "/patients/outcome/?patient_id=#{patient.id}"
+    } rescue {}
+
+    session["patient_id_map"] = {} if session["patient_id_map"].nil?
+
+    # Get patient id mapping
+    if @anc_patient.hiv_status.downcase == "positive" && session["patient_id_map"][@patient.id].nil?
+
+      @external_id = Bart2Connection::PatientIdentifier.search_by_identifier(@anc_patient.national_id).person_id # rescue nil
+
+      if !@external_id.nil? && !@external_id.blank?
+        session["patient_id_map"][@patient.id] = @external_id rescue nil
+      end
+
+    end
+
+    if @anc_patient.hiv_status.downcase == "positive" && !session["patient_id_map"][@patient.id].nil?
+
+      # art_link = GlobalProperty.find_by_property("art_link").property_value.gsub(/http\:\/\//, "") rescue nil
+      # anc_link = GlobalProperty.find_by_property("anc_link").property_value rescue nil
+
+      art_link = CoreService.get_global_property_value("art_link") rescue nil
+      anc_link = CoreService.get_global_property_value("anc_link") rescue nil
+
+      if !art_link.nil? && !anc_link.nil? # && foreign_links.include?(pos)
+        if !session[:token]
+          response = RestClient.post("http://#{art_link}/single_sign_on/get_token",
+            {"login"=>session[:username], "password"=>session[:password]}) rescue nil
+
+          if !response.nil?
+            response = JSON.parse(response)
+
+            session[:token] = response["auth_token"]
+          end
+
+        end
+      end
+
+      @external_encounters = Bart2Connection::PatientIdentifier.search_by_identifier(@anc_patient.national_id).patient.encounters.collect{|e| e.type.name}
+
+      
+      paths["HIV Reception"] = "http://#{art_link}/single_sign_on/single_sign_in?auth_token=#{session[:token]}&" +
+        "return_uri=http://#{anc_link}/patients/next_url?patient_id=#{@patient.id}&destination_uri=http://#{art_link}" +
+        "/encounters/new/hiv_reception?patient_id=#{session["patient_id_map"][@patient.id]}&current_location=#{session[:location_id]}"
+
+=begin
+      paths["HIV Clinic Registration"] = "http://#{art_link}/single_sign_on/single_sign_in?auth_token=#{session[:token]}&" +
+          "return_uri=http://#{anc_link}/patients/next_url?patient_id=#{@patient.id}&destination_uri=http://#{art_link}" +
+          "/encounters/new/hiv_clinic_registration?patient_id=#{session["patient_id_map"][@patient.id]}&current_location=#{session[:location_id]}"
+
+
+      paths["HIV Staging"] = "http://#{art_link}/single_sign_on/single_sign_in?auth_token=#{session[:token]}&" +
+          "return_uri=http://#{anc_link}/patients/next_url?patient_id=#{@patient.id}&destination_uri=http://#{art_link}" +
+          "/encounters/new/hiv_staging?patient_id=#{session["patient_id_map"][@patient.id]}&current_location=#{session[:location_id]}"
+=end
+
+=begin
+      paths["HIV Clinic Consultation"] = "http://#{art_link}/single_sign_on/single_sign_in?auth_token=#{session[:token]}&" +
+          "return_uri=http://#{anc_link}/patients/next_url?patient_id=#{@patient.id}&destination_uri=http://#{art_link}" +
+          "/encounters/new/hiv_clinic_consultation?patient_id=#{session["patient_id_map"][@patient.id]}&current_location=#{session[:location_id]}"
+
+      paths["ART Adherence"] = "http://#{art_link}/single_sign_on/single_sign_in?auth_token=#{session[:token]}&" +
+          "return_uri=http://#{anc_link}/patients/next_url?patient_id=#{@patient.id}&destination_uri=http://#{art_link}" +
+          "/encounters/new/art_adherence?patient_id=#{session["patient_id_map"][@patient.id]}&current_location=#{session[:location_id]}"
+
+      paths["Manage ART Prescriptions"] = "http://#{art_link}/single_sign_on/single_sign_in?auth_token=#{session[:token]}&" +
+          "return_uri=http://#{anc_link}/patients/next_url?patient_id=#{@patient.id}&destination_uri=http://#{art_link}" +
+          "/encounters/new/art_adherence?patient_id=#{session["patient_id_map"][@patient.id]}&current_location=#{session[:location_id]}"
+=end
+      
+    end
+
+    redirect_to "#{paths[params[:encounter_type]]}" and return
   end
 
 end

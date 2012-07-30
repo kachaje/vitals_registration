@@ -10,20 +10,19 @@ class ConceptTest < ActiveSupport::TestCase
     end
 
     should "search have answers for the concept" do
-      c = Concept.find_by_name("REFERRALS ORDERED")
-      answer = Concept.find_by_name("ADHERENCE COUNSELING")
+      c = concept(:referrals_ordered)
+      answer = concept(:muppet_counseling)
       assert_contains c.concept_answers.map(&:answer), answer
     end  
 
     should "search the answers for the concept and return the subset" do
-      c = Concept.find_by_name("REFERRALS ORDERED")
-      answer = Concept.find_by_name("ALCOHOL COUNSELING")
+      c = concept(:referrals_ordered)
+      answer = concept(:alcohol_counseling)
       assert_contains c.concept_answers.limit("ALCOHOL").map(&:answer), answer
     end  
     
     should "have an associated concept numeric" do
-      assert_equal concept_numeric(:height_limits), 
-                   Concept.find_by_name("HEIGHT (CM)").concept_numeric
+      assert_equal concept_numeric(:height_limits), concept(:height).concept_numeric
     end
     
   end

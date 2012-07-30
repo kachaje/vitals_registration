@@ -30,20 +30,22 @@ class GenericRegimensController < ApplicationController
     end
 		@current_regimen_names_for_programs = current_regimen_names_for_programs
 		
-		@current_hiv_program_state = PatientProgram.find(:first, :joins => :location, :conditions => ["patient_id = ? AND program_id = ? AND location.location_id = ? AND date_completed IS NULL", @patient.id, Program.find_by_concept_id(Concept.find_by_name('HIV PROGRAM').id).id, Location.current_health_center]).patient_states.current.first.program_workflow_state.concept.fullname rescue ''		
+		@current_hiv_program_state = PatientProgram.find(:first, :joins => :location, :conditions => ["program_id = ? AND location.location_id = ? AND date_completed IS NULL", Program.find_by_concept_id(Concept.find_by_name('HIV PROGRAM').id).id, Location.current_health_center]).patient_states.current.first.program_workflow_state.concept.fullname rescue ''		
+
+
 		session_date = session[:datetime].to_date rescue Date.today
 
-		pre_hiv_clinic_consultation = Encounter.find(:first,:order => "encounter_datetime DESC,date_created DESC",
+		pre_art_visit = Encounter.find(:first,:order => "encounter_datetime DESC,date_created DESC",
 		    :conditions =>["DATE(encounter_datetime) = ? AND patient_id = ? AND encounter_type = ?",
 		    session_date.to_date, @patient.id, EncounterType.find_by_name('PART_FOLLOWUP').id])
 
-		hiv_clinic_consultation = Encounter.find(:first,:order => "encounter_datetime DESC,date_created DESC",
+		art_visit = Encounter.find(:first,:order => "encounter_datetime DESC,date_created DESC",
             :conditions =>["DATE(encounter_datetime) = ? AND patient_id = ? AND encounter_type = ?",
-            session_date.to_date, @patient.id, EncounterType.find_by_name('HIV CLINIC CONSULTATION').id])
-		@hiv_clinic_consultation = false
+            session_date.to_date, @patient.id, EncounterType.find_by_name('ART VISIT').id])
+		@art_visit = false
 
-		if ((not pre_hiv_clinic_consultation.blank?) or (not hiv_clinic_consultation.blank?))
-			@hiv_clinic_consultation = true		
+		if ((not pre_art_visit.blank?) or (not art_visit.blank?))
+			@art_visit = true		
 		end
 
 		treatment_obs = Encounter.find(:first,:order => "encounter_datetime DESC,date_created DESC",
@@ -86,7 +88,7 @@ class GenericRegimensController < ApplicationController
 		sulphur_allergy_obs = Encounter.find(:first,:order => "encounter_datetime DESC,date_created DESC",
 			:conditions => ["patient_id = ? AND encounter_type IN (?) AND DATE(encounter_datetime) = ?",
 			@patient.id, EncounterType.find(:all,:select => 'encounter_type_id', 
-      :conditions => ["name IN (?)",["HIV CLINIC CONSULTATION", "TB VISIT"]]),session_date.to_date]).observations rescue []
+      :conditions => ["name IN (?)",["ART VISIT", "TB VISIT"]]),session_date.to_date]).observations rescue []
 
 		@alergic_to_suphur = false
 		(sulphur_allergy_obs || []).each do | obs |
@@ -95,14 +97,14 @@ class GenericRegimensController < ApplicationController
 			end
 		end
 
-		hiv_clinic_consultation_obs = Encounter.find(:first,
+		art_visit_obs = Encounter.find(:first,
       :order => "encounter_datetime DESC,date_created DESC",
 			:conditions => ["patient_id = ? AND encounter_type IN (?) AND DATE(encounter_datetime) = ?",
 			@patient.id, EncounterType.find(:all,:select => 'encounter_type_id', 
-      :conditions => ["name IN (?)",["HIV CLINIC CONSULTATION"]]),session_date.to_date]).observations rescue []
+      :conditions => ["name IN (?)",["ART VISIT"]]),session_date.to_date]).observations rescue []
 
 		@prescribe_art_drugs = false
-		(hiv_clinic_consultation_obs || []).each do | obs |
+		(art_visit_obs || []).each do | obs |
 			if obs.concept_id == (Concept.find_by_name('Prescribe drugs').concept_id rescue nil)
 				@prescribe_art_drugs = true if Concept.find(obs.value_coded).fullname.upcase == 'YES' and !arvs_prescribed
 			end
@@ -115,7 +117,7 @@ class GenericRegimensController < ApplicationController
 
         for encounter in current_encounters.reverse do
 
-            if encounter.name.humanize.include?('Hiv staging') || encounter.name.humanize.include?('Tb visit') || encounter.name.humanize.include?('Hiv clinic consultation') 
+            if encounter.name.humanize.include?('Hiv staging') || encounter.name.humanize.include?('Tb visit') || encounter.name.humanize.include?('Art visit') 
              
                 encounter = Encounter.find(encounter.id, :include => [:observations])
 
@@ -125,7 +127,7 @@ class GenericRegimensController < ApplicationController
                     end                    
                 end
 
-                if encounter.name.humanize.include?('Tb visit') || encounter.name.humanize.include?('Hiv clinic consultation')
+                if encounter.name.humanize.include?('Tb visit') || encounter.name.humanize.include?('Art visit')
 
                     encounter = Encounter.find(encounter.id, :include => [:observations])
                     for obs in encounter.observations do
@@ -179,7 +181,7 @@ class GenericRegimensController < ApplicationController
 			user_person_id = current_user.person_id
 		end
 
-		user_person_id = user_person_id rescue User.find_by_user_id(current_user.user_id).person_id
+		user_person_id = user_person_id rescue User.find_by_user_id(session[:user_id]).person_id
 
 		encounter = PatientService.current_treatment_encounter(@patient, session_date, user_person_id)
 		start_date = session[:datetime] || Time.now
@@ -363,13 +365,13 @@ class GenericRegimensController < ApplicationController
 	end    
 
 	def suggested
-		session_date = session[:datetime].to_date rescue Date.today
 		patient_program = PatientProgram.find(params[:id])
 		@options = []
 		render :layout => false and return unless patient_program
-		current_weight = PatientService.get_patient_attribute_value(patient_program.patient, "current_weight", session_date)
-		#regimen_concepts = patient_program.regimens(current_weight).uniq
-		@options = MedicationService.regimen_options(current_weight, patient_program.program)
+
+		regimen_concepts = patient_program.regimens(PatientService.get_patient_attribute_value(patient_program.patient, "current_weight")).uniq
+		@options = MedicationService.regimen_options(regimen_concepts, params[:patient_age].to_i)
+		#raise @options.to_yaml
 		render :layout => false
 	end
 

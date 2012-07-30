@@ -25,15 +25,15 @@ class GenericApplicationController < ActionController::Base
 	helper_method :next_task
 	filter_parameter_logging :password
 	before_filter :authenticate_user!, :except => ['login', 'logout','remote_demographics',
-		                                      'create_remote', 'mastercard_printable', 'get_token']
+		                                      'create_remote', 'mastercard_printable', 'get_token', 'test_enc']
 
     before_filter :set_current_user, :except => ['login', 'logout','remote_demographics',
-		                                      'create_remote', 'mastercard_printable', 'get_token']
+		                                      'create_remote', 'mastercard_printable', 'get_token', 'test_enc']
 
 	before_filter :location_required, :except => ['login', 'logout', 'location',
 		                                        'demographics','create_remote',
 		                                         'mastercard_printable',
-		                                        'remote_demographics', 'get_token', 'single_sign_in']
+		                                        'remote_demographics', 'get_token', 'single_sign_in', 'test_enc']
   
 	def rescue_action_in_public(exception)
 		@message = exception.message
@@ -132,18 +132,6 @@ class GenericApplicationController < ActionController::Base
 	return final_options
   end
 
-
-  def next_task(patient)
-    session_date = session[:datetime].to_date rescue Date.today
-    task = nil
-    begin
-      return task.url if task.present? && task.url.present?
-      return "/patients/show/#{patient.id}" 
-    rescue
-      return "/patients/show/#{patient.id}" 
-    end
-  end
-
   def current_user_roles
     user_roles = UserRole.find(:all,:conditions =>["user_id = ?", current_user.id]).collect{|r|r.role}
     RoleRole.find(:all,:conditions => ["child_role IN (?)", user_roles]).collect{|r|user_roles << r.parent_role}
@@ -236,16 +224,17 @@ private
   end
 
   def has_patient_been_on_art_before(patient)
-	on_art = false
-    patient_states = PatientProgram.find(:first, :conditions => ["program_id = ? AND location_id = ? AND patient_id = ?",      
+    patient_states = PatientProgram.find(:first, :joins => :location, 
+      :conditions => ["program_id = ? AND location.location_id = ? 
+      AND date_completed IS NULL AND patient_id = ?",      
       Program.find_by_concept_id(Concept.find_by_name('HIV PROGRAM').id).id, 
       Location.current_health_center,patient.id]).patient_states rescue []
-
     (patient_states || []).each do |state|
       if state.program_workflow_state.concept.fullname.match(/antiretrovirals/i)
-        on_art = true
+        return true
+        break
       end
     end
-    return on_art
+    return false
   end
 end

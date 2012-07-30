@@ -1,15 +1,14 @@
 class GenericClinicController < ApplicationController
   def index
-  	session[:cohort] = nil
     @facility = Location.current_health_center.name rescue ''
 
     @location = Location.find(session[:location_id]).name rescue ""
 
     @date = (session[:datetime].to_date rescue Date.today).strftime("%Y-%m-%d")
 
-    @user = current_user.name rescue ""
+    @user = User.find(session[:user_id]).name rescue ""
 
-    @roles = current_user.user_roles.collect{|r| r.role} rescue []
+    @roles = User.find(session[:user_id]).user_roles.collect{|r| r.role} rescue []
 
     render :template => 'clinic/index', :layout => false
   end
@@ -108,7 +107,7 @@ class GenericClinicController < ApplicationController
       @ever = Encounter.statistics(@types)
     end
 
-    @user = User.find(current_user.user_id).person.name rescue ""
+    @user = User.find(session[:user_id]).person.name rescue ""
 
     if simple_overview
         render :template => 'clinic/overview_simple.rhtml' , :layout => false
@@ -222,12 +221,12 @@ class GenericClinicController < ApplicationController
 
   def management_tab
     @reports = [
-      ["Enter receipts<br />(from warehouse)","delivery"],
-      ["Enter verified stock count<br />(supervision)","delivery?id=verification"],
-      ["Print<br />Barcode","print_barcode"],
-      ["Expiring<br />drugs","date_select"],
-      ["Enter drug relocation<br />(in or out) / disposal","edit_stock"],
-      ["Stock<br />report","date_select"]
+      ["New stock","delivery"],
+      ["Edit stock","edit_stock"],
+      ["Print Barcode","print_barcode"],
+      ["Expiring drugs","date_select"],
+      ["Removed from shelves","date_select"],
+      ["Stock report","date_select"]
     ]
     render :layout => false
   end
@@ -238,7 +237,7 @@ class GenericClinicController < ApplicationController
     @types = ['LAB ORDERS', 'SPUTUM SUBMISSION', 'LAB RESULTS', 'GIVE LAB RESULTS']
     @me = Encounter.statistics(@types, :conditions => ['DATE(encounter_datetime) = ? AND encounter.creator = ?', enc_date, current_user.user_id])
     @today = Encounter.statistics(@types, :conditions => ['DATE(encounter_datetime) = ?', enc_date])
-    @user = User.find(current_user.user_id).name rescue ""
+    @user = User.find(session[:user_id]).name rescue ""
 
     render :template => 'clinic/lab_tab.rhtml' , :layout => false
   end

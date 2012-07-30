@@ -6,13 +6,8 @@ require 'shoulda'
 require 'mocha'
 require 'colorfy_strings'
 require 'factory_girl'
-Factory.find_definitions
 
-if (!Factory.factories || Factory.factories.empty?)
-  Dir.glob(File.dirname(__FILE__) + "/factories/*.rb").each do |factory|
-    require factory
-  end
-end
+Dir[File.join(RAILS_ROOT, 'test', 'factories', '**', '*')].each {|f| require f }
 
 alias :running :lambda
 
@@ -36,7 +31,6 @@ class ActiveSupport::TestCase
   self.set_fixture_class :order_type => OrderType
   self.set_fixture_class :patient_identifier_type => PatientIdentifierType
   self.set_fixture_class :patient => Patient
-  self.set_fixture_class :program => Program
   self.set_fixture_class :person_address => PersonAddress
   self.set_fixture_class :person_name => PersonName
   self.set_fixture_class :users => User
@@ -49,7 +43,7 @@ class ActiveSupport::TestCase
 
   setup do    
     User.current_user = User.find_by_username('registration')
-    Location.current_location = Location.find_by_name('Neno District Hospital - Registration')
+    Location.current_location = Location.find_by_name('Neno District Hospital - Registration')  
   end
 
   def assert_difference(object, method = nil, difference = 1)
@@ -84,24 +78,23 @@ class ActiveSupport::TestCase
   # logged_in_as :mikmck, :registration { }
   def logged_in_as(login, place, &block)
      @request.session[:user_id] = users(login).user_id
-     @request.session[:location_id] = location(:location_00004).location_id
+     @request.session[:location_id] = location(place).location_id
      yield block
   end 
-
+  
   def prescribe(patient, obs, drug, dose = 1, frequency = "ONCE A DAY", prn = 0, start_date = nil, end_date = nil)
     start_date ||= Time.now
     end_date ||= Time.now + 3.days
-    
-    encounter = PatientService.current_treatment_encounter(patient, Date.today, User.current_user.person_id)
+    encounter = patient.current_treatment_encounter
     DrugOrder.write_order(encounter, patient, obs, drug, start_date, end_date, dose, frequency, prn = 0)
   end
   
   def diagnose(patient, value_coded, value_coded_name_id = nil)
-    value_coded_name_id ||= Concept.find(value_coded).concept_names.first.concept_name_id
-    encounter = Encounter.make(:encounter_type => EncounterType[:outpatient_diagnosis],
+    value_coded_name_id ||= Concept.find(value_coded).name.concept_name_id
+    encounter = Encounter.make(:encounter_type => encounter_type(:outpatient_diagnosis), 
       :patient_id => patient.id)
     encounter.observations.create(:obs_datetime => Time.now, 
-      :person_id => patient.id, :concept_id => Concept[:diagnosis],
+      :person_id => patient.id, :concept_id => concept(:diagnosis), 
       :value_coded => value_coded, :value_coded_name_id => value_coded_name_id)
   end
 end

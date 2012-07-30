@@ -30,23 +30,27 @@ module MedicationService
 		diabetes_medication_drug_concepts
 	end
 
-  # Generate a given list of Regimen+s for the given +Patient+ <tt>weight</tt>
-  # into select options. 
-	def self.regimen_options(weight, program)
-		regimens = Regimen.find(	:all,
+  # Convert a list +Concept+s of +Regimen+s for the given +Patient+ <tt>age</tt>
+  # into select options. See also +EncountersController#arv_regimen_answers+
+	def self.regimen_options(regimen_concepts, age)
+		options = regimen_concepts.map { |r|
+			[r.concept_id, (r.concept_names.typed("SHORT").first ||
+				r.concept_names.typed("FULLY_SPECIFIED").first).name]
+		}
+	
+		suffixed_options = options.collect { |opt|
+			opt_reg = Regimen.find(	:all,
+									:select => 'regimen_index',
 									:order => 'regimen_index',
-									:conditions => ['? >= min_weight AND ? < max_weight AND program_id = ?', weight, weight, program.program_id])
+									:conditions => ['concept_id = ?', opt[0]]).uniq.first
 
-		options = regimens.map { |r|
-			concept_name = (r.concept.concept_names.typed("SHORT").first ||	r.concept.concept_names.typed("FULLY_SPECIFIED").first).name
-			if r.regimen_index.blank?
-				["#{concept_name}", r.concept_id, r.regimen_index.to_i]
+			#[opt[0], "#{opt_reg.regimen_index}#{suffix} - #{opt[1]}"]
+			if !opt_reg.regimen_index.blank?
+				["#{opt_reg.regimen_index} - #{opt[1]}", opt[0], opt_reg.regimen_index.to_i]
 			else
-				["#{r.regimen_index} - #{concept_name}", r.concept_id, r.regimen_index.to_i]
+				["#{opt[1]}", opt[0], opt_reg.regimen_index.to_i]
 			end
-		}.sort_by{| r | r[2]}.uniq
-
-		return options
+		}.sort_by{|opt| opt[2]}
 	end
 	
   def self.current_orders(patient)

@@ -1,8 +1,7 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
 class PatientProgramTest < ActiveSupport::TestCase
-  fixtures :patient, :patient_identifier, :person_name, :person, :encounter,
-           :encounter_type, :concept, :concept_name, :obs, :location
+  fixtures :patient, :patient_identifier, :person_name, :person, :encounter, :encounter_type, :concept, :concept_name, :obs, :location
 
   context "Patient Programs" do
     should "be valid" do
@@ -18,8 +17,7 @@ class PatientProgramTest < ActiveSupport::TestCase
       patient_program1.save
       patient_program2 = Factory(:patient_program)
       patient_program2.program = program
-     #can be done better
-      assert_equal patient_program1.program, patient_program2.program
+      assert !patient_program2.valid?
     end
 
     should "allow overlap for same program different date ranges" do
@@ -36,7 +34,7 @@ class PatientProgramTest < ActiveSupport::TestCase
 
     should "allow overlap of different program" do
       program1 = Factory(:program)
-      program2 = Factory(:program, :program_id => 102)
+      program2 = Factory(:program)
       patient_program1 = Factory(:patient_program)
       patient_program1.program = program1
       patient_program1.save
@@ -56,8 +54,7 @@ class PatientProgramTest < ActiveSupport::TestCase
       patient_program2 = Factory(:patient_program)
       patient_program2.program = program
       patient_program2.location = neno_outpatient
-      #can be done better
-      assert_equal patient_program1.program, patient_program2.program
+      assert !patient_program2.valid?
     end
 
     should "allow overlap for same program from different sites" do

@@ -11,8 +11,7 @@ class Observation < ActiveRecord::Base
   has_many :concept_names, :through => :concept
 
   named_scope :recent, lambda {|number| {:order => 'obs_datetime DESC,date_created DESC', :limit => number}}
-  named_scope :before, lambda {|date| {:conditions => ["obs_datetime < ? ", date], :order => 'obs_datetime DESC, date_created DESC', :limit => 1}}
-  named_scope :old, lambda {|number| {:order => 'obs_datetime ASC, date_created ASC', :limit => number}}
+  named_scope :old, lambda {|number| {:order => 'obs_datetime ASC,date_created ASC', :limit => number}}
   named_scope :question, lambda {|concept|
     concept_id = concept.to_i
     concept_id = ConceptName.first(:conditions => {:name => concept}).concept_id rescue 0 if concept_id == 0
@@ -157,4 +156,13 @@ class Observation < ActiveRecord::Base
     text += ": #{self.answer_string}" if(self.answer_string.downcase != "yes" && self.answer_string.downcase != "unknown")
     text
   end
+  
+  def to_a(tags=[])
+    formatted_name = self.concept_name.tagged(tags).name rescue nil
+    formatted_name ||= self.concept_name.name rescue nil
+    formatted_name ||= self.concept.concept_names.tagged(tags).first.name rescue nil
+    formatted_name ||= self.concept.concept_names.first.name rescue 'Unknown concept name'
+    [formatted_name, self.answer_string(tags)]
+  end
+
 end

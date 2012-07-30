@@ -1,3 +1,0 @@
-class GenericEncounterTypesController < ApplicationController
-
-end

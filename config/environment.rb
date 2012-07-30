@@ -2,6 +2,8 @@
 RAILS_GEM_VERSION = '2.3.5' unless defined? RAILS_GEM_VERSION
 BART_VERSION = '2.0 beta'
 
+require 'thread'
+
 # Bootstrap the Rails environment, frameworks, and default configuration
 require File.join(File.dirname(__FILE__), 'boot')
 
@@ -11,6 +13,8 @@ Rails::Initializer.run do |config|
   config.action_controller.session_store = :active_record_store
   config.active_record.schema_format = :sql
   # config.time_zone = 'UTC'
+	config.gem 'warden'
+	config.gem 'devise'
   
   config.action_controller.session = {
     :session_key => 'bart_session',
@@ -26,18 +30,14 @@ require 'has_many_through_association_extension'
 require 'bantu_soundex'
 require 'json'
 require 'colorfy_strings'
+require 'rest-client'
+require 'mechanize'
 
 ActiveSupport::Inflector.inflections do |inflect|
   inflect.irregular 'person_address', 'person_address'
   inflect.irregular 'obs', 'obs'
   inflect.irregular 'concept_class', 'concept_class'
 end  
-
-health_data = YAML.load(File.open(File.join(RAILS_ROOT, "config/database.yml"), "r"))['migration']
-Lab.establish_connection(health_data)
-BartOneEncounter.establish_connection(health_data) # added for migration
-BartOneObservation.establish_connection(health_data) # added for migration
-BartOneDrugOrder.establish_connection(health_data) # added for migration
 
 class Mime::Type
   delegate :split, :to => :to_s

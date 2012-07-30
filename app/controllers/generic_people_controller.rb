@@ -120,16 +120,10 @@ class GenericPeopleController < ApplicationController
 		@found_person_id = params[:found_person_id] 
 		@relation = params[:relation]
 		@person = Person.find(@found_person_id) rescue nil
-    @current_hiv_program_state = PatientProgram.find(:first, :joins => :location, :conditions => ["program_id = ? AND patient_id = ? AND location.location_id = ?", Program.find_by_concept_id(Concept.find_by_name('HIV PROGRAM').id).id,@person.patient, Location.current_health_center]).patient_states.last.program_workflow_state.concept.fullname rescue ''
-    @transferred_out = @current_hiv_program_state.upcase == "PATIENT TRANSFERRED OUT"? true : nil
-    defaulter = Patient.find_by_sql("SELECT current_defaulter(#{@person.patient.patient_id}, '#{session_date}') 
-                                     AS defaulter 
-                                     FROM patient_program LIMIT 1")[0].defaulter
-    @defaulted = defaulter == 0 ? nil : true     
-    @task = main_next_task(Location.current_location, @person.patient, session_date.to_date)
+		@task = main_next_task(Location.current_location, @person.patient, session_date.to_date)
 		@arv_number = PatientService.get_patient_identifier(@person, 'ARV Number')
-		@patient_bean = PatientService.get_patient(@person)                                                             
-    render :layout => false	
+		@patient_bean = PatientService.get_patient(@person)
+		render :layout => 'menu'
 	end
 
 	def tranfer_patient_in
@@ -251,14 +245,6 @@ class GenericPeopleController < ApplicationController
     end
 
     if params[:person][:patient] && success
-		  	if !params[:identifier].empty?	
-					patient_identifier = PatientIdentifier.new
-					patient_identifier.type = PatientIdentifierType.find_by_name("National id")
-					patient_identifier.identifier = params[:identifier]
-					patient_identifier.patient = person.patient
-					patient_identifier.save!
-				end
-
       PatientService.patient_national_id_label(person.patient)
       unless (params[:relation].blank?)
         redirect_to search_complete_url(person.id, params[:relation]) and return
@@ -408,7 +394,7 @@ class GenericPeopleController < ApplicationController
     result_hash = {}
 
     if PatientService.art_patient?(patient)
-      clinic_encounters = ["APPOINTMENT","HIV CLINIC CONSULTATION","VITALS","HIV STAGING",'ART ADHERENCE','DISPENSING','HIV CLINIC REGISTRATION']
+      clinic_encounters = ["APPOINTMENT","ART VISIT","VITALS","HIV STAGING",'ART ADHERENCE','DISPENSING','ART_INITIAL']
       clinic_encounter_ids = EncounterType.find(:all,:conditions => ["name IN (?)",clinic_encounters]).collect{| e | e.id }
       first_encounter_date = patient.encounters.find(:first,
         :order => 'encounter_datetime',
@@ -461,7 +447,7 @@ class GenericPeopleController < ApplicationController
     result_hash = {}
     
     if PatientService.art_patient?(patient)
-      clinic_encounters = ["APPOINTMENT","HIV CLINIC CONSULTATION","VITALS","HIV STAGING",'ART ADHERENCE','DISPENSING','HIV CLINIC REGISTRATION']
+      clinic_encounters = ["APPOINTMENT","ART VISIT","VITALS","HIV STAGING",'ART ADHERENCE','DISPENSING','ART_INITIAL']
       clinic_encounter_ids = EncounterType.find(:all,:conditions => ["name IN (?)",clinic_encounters]).collect{| e | e.id }
       first_encounter_date = patient.encounters.find(:first, 
         :order => 'encounter_datetime',

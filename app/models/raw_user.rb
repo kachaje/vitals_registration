@@ -20,7 +20,7 @@ class RawUser < ActiveRecord::Base
    has_one :activities_property,
           :class_name => 'UserProperty',
           :foreign_key => :user_id,
-          :conditions => ['property = ?', 'Activities'] 
+          :conditions => ['property = ?', 'ANC Activities'] 
 
 
   def first_name
@@ -75,7 +75,7 @@ class RawUser < ActiveRecord::Base
    def before_create
     super
     self.salt = User.random_string(10) if !self.salt?
-    self.password = User.encrypt(self.password,self.salt)
+    self.password = User.encrypt(self.password, self.salt)
   end
  
    def self.random_string(len)
@@ -100,10 +100,10 @@ class RawUser < ActiveRecord::Base
   # have a corresponding privilege for?
   def activities=(arr)
     prop = activities_property || UserProperty.new
-    prop.property = 'Activities'
+    prop.property = 'ANC Activities'
     prop.property_value = arr.join(',')
     prop.user_id = self.id
     prop.save
-  end
-
+  end  
+  
 end
