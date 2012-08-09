@@ -17,8 +17,7 @@ class RelationshipsController < ApplicationController
       :person_b => params[:relation],
       :relationship => params[:relationship])
     if @relationship.save
-      redirect_to session[:return_to] and return unless session[:return_to].blank?
-      redirect_to :controller => :patients, :action => :relationships, :patient_id => @patient.patient_id
+      redirect_to :controller => :patients, :action => :show, :patient_id => @patient.patient_id
     else 
       render :action => "new" 
     end

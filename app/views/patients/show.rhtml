@@ -57,32 +57,50 @@
         </h1>
         <div id="custom_banner" path="/patients/custom_banner"></div>
         <span id='patient_name'>
-          <%=  %>
+          <%= @anc_patient.name %>
         </span>
         <span id='patient_id'>
-          <%=  %>
+          <%= @anc_patient.national_id %>
         </span>
-        <span id='patient_residence'>
-          <%=  %>
-        </span>
+
         <span id='patient_age'>
-          <%=  %>
+          <%=
+          if @anc_patient.age_in_days == 0
+            "Born Today"
+          elsif @anc_patient.age_in_days <= 14
+            @anc_patient.age_in_days.to_s + (@anc_patient.age_in_days == 1 ? " day" : " days")
+          elsif @anc_patient.age_in_weeks <= 6
+            @anc_patient.age_in_weeks.to_s + " weeks"
+          elsif @anc_patient.age_in_months <= 18
+            @anc_patient.age_in_months.to_s + " months"
+          else
+            @anc_patient.age.to_s + " years"
+          end
+        %>
         </span>
         <span id='patient_gender'>
-          <%=  %>
+          <%= @anc_patient.sex %>
         </span>
-        <!--div id="patient_card">
-          <div value="AZT">Regimen</div>
-          <div value="No">On CPT?</div>
-        </div-->
+
         <select id="links">
-          <option>Baby Demographics</option>
-          <option>Mother Demographics</option>
-          <option>Father Demographics</option>
-          <option>Birth Report</option>
+          <option value="/patients/demographics?patient_id=<%= @patient.id %>&person_id=<%= @patient.id %>&cat=baby">
+            Baby Demographics
+          </option>
+          <option value="<%= (@mother.nil? ? 
+              "/patients/search?patient_id=#{@patient.id}&cat=mother&name=#{@anc_patient.name}" :
+                      "/patients/demographics?patient_id=#{@patient.id}&person_id=#{@mother.relation.patient.id}&cat=mother") %>">
+            Mother Demographics
+          </option>
+          <option value="<%= (@father.nil? ?
+              "/patients/search?patient_id=#{@patient.id}&cat=father&name=#{@anc_patient.name}" :
+                      "/patients/demographics?patient_id=#{@patient.id}&person_id=#{@father.relation.patient.id}&cat=father") %>">
+            Father Demographics
+          </option>
+          <option value="/patients/birth_report/<%= @patient.id %>">Birth Report</option>
         </select>
         <select id="tabs">
-          <option>Summary</option>
+          <option value="/patients/summary/<%= @patient.id %>">Parents</option>
+          <option value="/patients/siblings/<%= @patient.id %>">Siblings</option>
         </select>
       </td>
     </tr>

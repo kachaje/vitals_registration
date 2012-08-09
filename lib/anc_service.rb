@@ -1218,9 +1218,49 @@ module ANCService
       "#{self.person.names.first.given_name} #{self.person.names.first.family_name}".titleize rescue nil
     end  
 
-    def address
-      "#{self.person.addresses.first.city_village}" rescue nil
+    def first_name
+      "#{self.person.names.first.given_name}".titleize rescue nil
+    end
+
+    def last_name
+      "#{self.person.names.first.family_name}".titleize rescue nil
+    end
+
+    def middle_name
+      "#{self.person.names.first.middle_name}".titleize rescue nil
+    end
+
+    def maiden_name
+      "#{self.person.names.first.family_name2}".titleize rescue nil
+    end
+
+    def current_address2
+      "#{self.person.addresses.last.city_village}" rescue nil
     end 
+
+    def current_address1
+      "#{self.person.addresses.last.address1}" rescue nil
+    end
+
+    def current_district
+      "#{self.person.addresses.last.address2}" rescue nil
+    end
+
+    def current_address
+      "#{self.current_address1}, #{self.current_address2}, #{self.current_district}" rescue nil
+    end
+
+    def home_district
+      "#{self.person.addresses.last.subregion}" rescue nil
+    end
+
+    def home_ta
+      "#{self.person.addresses.last.county_district}" rescue nil
+    end
+
+    def home_village
+      "#{self.person.addresses.last.neighborhood_cell}" rescue nil
+    end
 
     def age(today = Date.today)
       return nil if self.person.birthdate.nil?
@@ -1241,7 +1281,15 @@ module ANCService
       months = (today.month - self.person.birthdate.month)
       (years * 12) + months
     end
-    
+
+    def age_in_weeks(today = Date.today)
+      weeks = (today - self.person.birthdate).to_i / 7
+    end
+
+    def age_in_days(today = Date.today)
+      days = (today - self.person.birthdate).to_i
+    end
+
     def birthdate_formatted
       if self.person.birthdate_estimated==1
         if self.person.birthdate.day == 1 and self.person.birthdate.month == 7
@@ -1328,6 +1376,16 @@ module ANCService
       end
 
       return demographics
+    end
+
+    def nationality
+      nationality = get_attribute("Citizenship")
+
+      if !nationality.nil? and nationality.downcase == "other"
+        nationality = get_attribute("Race")
+      end
+      
+      nationality
     end
 
     def get_attribute(attribute)
@@ -1446,6 +1504,20 @@ module ANCService
           o.answer_string.to_i if o.concept.concept_names.first.name.downcase == "reason for visit"
         }.compact
       }.flatten rescue []
+    end
+
+    def mother
+      self.patient.relationships.find(:last, :conditions => ["relationship = ?",
+        RelationshipType.find_by_b_is_to_a("Mother").id]) rescue nil
+    end
+
+    def father
+      self.patient.relationships.find(:last, :conditions => ["relationship = ?",
+        RelationshipType.find_by_b_is_to_a("Father").id]) rescue nil
+    end
+
+    def siblings
+      
     end
 
   end
@@ -1685,17 +1757,17 @@ module ANCService
     patient_params = params["patient"]
     person_attribute_params = params["attributes"]
 
-    params_to_process = params.reject{|key,value| key.match(/addresses|patient|names|attributes/) }
-    birthday_params = params_to_process.reject{|key,value| key.match(/gender/) }
+    params_to_process = params.reject{|key,value| key.match(/addresses|patient|names|attributes|cat|action|controller/) }
+    birthday_params = params_to_process.reject{|key,value| key.match(/gender|person_id|cat|action|controller/) }
 
-    person_params = params_to_process.reject{|key,value| key.match(/birth_|age_estimate/) }
+    person_params = params_to_process.reject{|key,value| key.match(/birth_|age_estimate|cat|action|controller/) }
 
     if !birthday_params.empty?
 
       if birthday_params["birth_year"] == "Unknown"
-        person.set_birthdate_by_age(birthday_params["age_estimate"])
+        set_birthdate_by_age(person, birthday_params["age_estimate"])
       else
-        person.set_birthdate(birthday_params["birth_year"], birthday_params["birth_month"], birthday_params["birth_day"])
+        set_birthdate(person, birthday_params["birth_year"], birthday_params["birth_month"], birthday_params["birth_day"])
       end
 
       person.birthdate_estimated = 1 if params["birthdate_estimated"] == 'true'

@@ -1,0 +1,121 @@
+<html>
+    <head>
+        <title>report</title>
+        <style>
+            table {
+                font-family: verdana;
+            }
+            #container td{
+                border: 1px solid #ccc;
+            }
+            #tb th{
+                border: 1px solid #ccc;
+                background-color: #6281A7;
+                color: #eee;
+            }
+        </style>
+    </head>
+    <body>
+        <table cellpadding="5" width="100%" style="font-family: verdana;">
+            <tr>
+                <td style="text-align: center;">
+                    <img src="images/emblem.gif" alt="emblem" style="float: left; margin-left: 20px;" /> 
+                    <div style="padding-top: 10px; color: #6281A7; font-size: 1.8em; 
+                         float: right; margin-top: 20px;">
+                        Birth Registration Report
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td style="text-align: left;">
+                    Republic of Malawi
+                    <div style="float: right; font-weight: bold;">NATIONAL REGISTRATION ACT</div>
+                </td>
+            </tr>
+            <tr>
+                <td style="text-align: center; text-decoration: underline; font-weight: bold; font-size: ">
+                    DISTRICT REGISTER FOR BIRTH REGISTRATION IN HOSPITALS
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table width="100%" style="font-size: 0.9em;" cellpadding="3">
+                        <tbody id="tb">
+                            <tr>
+                                <th>
+                                    Serial number
+                                </th>
+                                <th>
+                                    Name of child
+                                </th>
+                                <th>
+                                    Date of birth
+                                </th>
+                                <th>
+                                    Name and home address of father
+                                </th>
+                                <th>
+                                    Name and home address of mother
+                                </th>
+                                <th>
+                                    Nationality of parents
+                                </th>
+                                <th>
+                                    Physical residential address of parents
+                                </th>
+                                <th>
+                                    ID number
+                                </th>
+                                <th>
+                                    District of birth
+                                </th>
+                                <th>
+                                    DC
+                                </th>
+                            </tr>
+                        </tbody>
+                        <tbody id="container">                            
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <script type="text/javascript" language="javascript">
+            
+            var people = (localStorage.people != null ? JSON.parse(localStorage.people) : {});
+                
+            function __$(id){
+                return document.getElementById(id);
+            }
+            
+            var count = 0;
+            
+            for(var f in people){
+                count++;
+                
+                var row = document.createElement("tr");
+                __$("container").appendChild(row);
+                
+                var cells = [
+                    count,
+                    (people[f]["first_name"] + " " + people[f]["middle_name"] + " " + people[f]["last_name"]),
+                    people[f]["date_of_birth"],
+                    (people[f]["father_first_name"] + " " + people[f]["father_middle_name"] + " " + people[f]["father_last_name"]),
+                    (people[f]["mother_first_name"] + " " + people[f]["mother_middle_name"] + " " + people[f]["mother_last_name"]),
+                    (people[f]["father_nationality"] + "/" + people[f]["mother_nationality"]),
+                    (people[f]["father_physical_address"] + "/" + people[f]["mother_physical_address"]),
+                    people[f]["identifier"],
+                    "&nbsp;",
+                    "&nbsp;"
+                ]
+                
+                for(var i = 0; i < cells.length; i++){
+                    var cell = document.createElement("td");
+                    cell.innerHTML = cells[i];
+                
+                    row.appendChild(cell);
+                }
+            }
+        </script>
+    </body>
+</html>

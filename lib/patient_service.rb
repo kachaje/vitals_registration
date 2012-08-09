@@ -10,7 +10,7 @@ module PatientService
 		patient_params = params["person"]["patient"]
     birthday_params = params["person"]
 		params_to_process = params.reject{|key,value| 
-      key.match(/identifiers|addresses|patient|names|relation|cell_phone_number|home_phone_number|office_phone_number|agrees_to_be_visited_for_TB_therapy|agrees_phone_text_for_TB_therapy/) 
+      key.match(/identifiers|addresses|patient|names|relation|cell_phone_number|home_phone_number|office_phone_number|agrees_to_be_visited_for_TB_therapy|agrees_phone_text_for_TB_therapy/)
     }
 		birthday_params = params_to_process["person"].reject{|key,value| key.match(/gender/) }
 		person_params = params_to_process["person"].reject{|key,value| key.match(/birth_|age_estimate|occupation/) }
@@ -53,14 +53,17 @@ module PatientService
     passed_params = {"person"=> 
         {"data" => 
           {"addresses"=> 
-            {"state_province"=> address_params["address2"], 
-            "address2"=> address_params["address1"], 
-            "city_village"=> address_params["city_village"],
-            "county_district"=> address_params["county_district"]
+            {"state_province"=> (address_params["address2"] rescue ""),
+            "address2"=> (address_params["address1"] rescue ""),
+            "city_village"=> (address_params["city_village"] rescue ""),
+            "county_district"=> (address_params["county_district"] rescue "")
           }, 
           "attributes"=> 
-            {"occupation"=> params["person"]["occupation"], 
-            "cell_phone_number" => params["person"]["cell_phone_number"] },
+            {"occupation"=> (params["person"]["occupation"] rescue ""),
+            "cell_phone_number" => (params["person"]["cell_phone_number"] rescue ""),
+            "citizenship" => (params["person"]["citizenship"] rescue ""),
+            "race" => (params["person"]["race"] rescue "")
+          },
           "patient"=> 
             {"identifiers"=> 
               {"diabetes_number"=>""}}, 
@@ -86,9 +89,10 @@ module PatientService
     else
       national_id = params["person"]["patient"]["identifiers"]["National_id"]
     end
-      
+    
 	  person = self.create_from_form(params[:person])
     identifier_type = PatientIdentifierType.find_by_name("National id") || PatientIdentifierType.find_by_name("Unknown id")
+
     person.patient.patient_identifiers.create("identifier" => national_id, 
       "identifier_type" => identifier_type.patient_identifier_type_id) unless national_id.blank?
     return person
@@ -921,12 +925,13 @@ EOF
 	end
   
 	def self.create_from_form(params)
+    
 		address_params = params["addresses"]
 		names_params = params["names"]
 		patient_params = params["patient"]
 		params_to_process = params.reject{|key,value| key.match(/addresses|patient|names|relation|cell_phone_number|home_phone_number|office_phone_number|agrees_to_be_visited_for_TB_therapy|agrees_phone_text_for_TB_therapy/) }
 		birthday_params = params_to_process.reject{|key,value| key.match(/gender/) }
-		person_params = params_to_process.reject{|key,value| key.match(/birth_|age_estimate|occupation|identifiers/) }
+		person_params = params_to_process.reject{|key,value| key.match(/birth_|age_estimate|occupation|identifiers|citizenship|race/) }
 
 		if person_params["gender"].to_s == "Female"
       person_params["gender"] = 'F'
@@ -963,6 +968,14 @@ EOF
 		person.person_attributes.create(
 		  :person_attribute_type_id => PersonAttributeType.find_by_name("Home Phone Number").person_attribute_type_id,
 		  :value => params["home_phone_number"]) unless params["home_phone_number"].blank? rescue nil
+
+		person.person_attributes.create(
+		  :person_attribute_type_id => PersonAttributeType.find_by_name("Citizenship").person_attribute_type_id,
+		  :value => params["citizenship"]) unless params["citizenship"].blank? rescue nil
+
+		person.person_attributes.create(
+		  :person_attribute_type_id => PersonAttributeType.find_by_name("Race").person_attribute_type_id,
+		  :value => params["race"]) unless params["race"].blank? rescue nil
 
     # TODO handle the birthplace attribute
 

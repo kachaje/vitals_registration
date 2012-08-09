@@ -1,17 +1,7 @@
 class PeopleController < GenericPeopleController
    
-=begin     
-  def confirm
-    if params[:found_person_id]
-      @patient = Patient.find(params[:found_person_id])
-      redirect_to next_task(@patient) and return
-    else 
-      redirect_to "/clinic" and return
-    end
-  end
-=end    
-
   def create
+    # raise params.to_yaml
    
     hiv_session = false
     if current_program_location == "HIV program"
@@ -21,24 +11,27 @@ class PeopleController < GenericPeopleController
     person = PatientService.create_patient_from_dde(params) if create_from_dde_server
 
     unless person.blank?
-      if use_filing_number and hiv_session and false
-        PatientService.set_patient_filing_number(person.patient) 
-        archived_patient = PatientService.patient_to_be_archived(person.patient)
-        message = PatientService.patient_printing_message(person.patient,archived_patient,creating_new_patient = true)
-        unless message.blank?
-          print_and_redirect("/patients/filing_number_and_national_id?patient_id=#{person.id}" , next_task(person.patient),message,true,person.id)
-        else
-          print_and_redirect("/patients/filing_number_and_national_id?patient_id=#{person.id}", next_task(person.patient)) 
-        end
+
+      encounter = Encounter.new(params[:encounter])
+      encounter.patient_id = person.id
+      encounter.encounter_datetime = session[:datetime] unless session[:datetime].blank?
+      encounter.save
+
+      if !params[:cat].nil? && !params[:patient_id].nil?
+        redirect_to "/relationships/new?patient_id=#{params[:patient_id]}&relation=#{person.id
+            }&cat=#{params[:cat]}" and return
       else
-        print_and_redirect("/patients/national_id_label?patient_id=#{person.id}", next_task(person.patient))
+
+        # print_and_redirect("/patients/national_id_label?patient_id=#{person.id}", next_task(person.patient))
+
+        redirect_to next_task(person.patient) and return
+
       end
-      return
     end
 
     success = false
     Person.session_datetime = session[:datetime].to_date rescue Date.today
-
+    
     #for now BART2 will use BART1 for patient/person creation until we upgrade BART1 to 2
     #if GlobalProperty.find_by_property('create.from.remote') and property_value == 'yes'
     #then we create person from remote machine
@@ -59,14 +52,19 @@ class PeopleController < GenericPeopleController
     encounter.patient_id = person.id
     encounter.encounter_datetime = session[:datetime] unless session[:datetime].blank?
     encounter.save   
-    
+
     if params[:person][:patient] && success
       PatientService.patient_national_id_label(person.patient)
-      unless (params[:relation].blank?)
-        redirect_to search_complete_url(person.id, params[:relation]) and return
+      # unless (params[:relation].blank?)
+      #  redirect_to search_complete_url(person.id, params[:relation]) and return
+      if !params[:cat].nil? && !params[:patient_id].nil?        
+        redirect_to "/relationships/new?patient_id=#{params[:patient_id]}&relation=#{person.id
+            }&cat=#{params[:cat]}" and return
       else
 
-        print_and_redirect("/patients/national_id_label?patient_id=#{person.id}", next_task(person.patient))
+        # print_and_redirect("/patients/national_id_label?patient_id=#{person.id}", next_task(person.patient))
+
+        redirect_to next_task(person.patient) and return
         
       end
     else
@@ -76,9 +74,9 @@ class PeopleController < GenericPeopleController
   end
 
 	def search
+      
 		found_person = nil
 		if params[:identifier]
-      
 			local_results = PatientService.search_by_identifier(params[:identifier])
 
 			if local_results.length > 1
@@ -86,10 +84,6 @@ class PeopleController < GenericPeopleController
 			elsif local_results.length == 1
 				found_person = local_results.first
         
-        if (found_person.gender rescue "") == "M"
-          redirect_to "/clinic/no_males" and return
-        end
-      
 			else
 				# TODO - figure out how to write a test for this
 				# This is sloppy - creating something as the result of a GET
@@ -99,13 +93,10 @@ class PeopleController < GenericPeopleController
 				end
 			end
       
-      if (found_person.gender rescue "") == "M"
-        redirect_to "/clinic/no_males" and return
-      end
-      
 			if found_person
-				if params[:relation]
-					redirect_to search_complete_url(found_person.id, params[:relation]) and return
+				if params[:cat] && params[:patient_id] 
+          redirect_to "/relationships/new?patient_id=#{params[:patient_id]}&relation=#{found_person.id
+            }&cat=#{params[:cat]}" and return
 				else
           
           redirect_to next_task(found_person.patient) and return
@@ -124,6 +115,69 @@ class PeopleController < GenericPeopleController
 		end
 
 	end
-  
+
+	# This method is just to allow the select box to submit, we could probably do this better
+	def select
+    
+    if params[:person][:id] != '0' && Person.find(params[:person][:id]).dead == 1
+
+			redirect_to :controller => :patients, :action => :show, :id => params[:person]
+		else
+			# redirect_to search_complete_url(params[:person][:id], params[:relation], params[:cat]) and return unless params[:person][:id].blank? || params[:person][:id] == '0'
+      
+      redirect_to "/relationships/new?patient_id=#{params[:patient_id]}&relation=#{params[:person][:id]
+            }&cat=#{params[:cat]}" and return unless params[:person][:id].blank? || params[:person][:id] == '0'
+
+      if params[:cat] and params[:cat] == "baby"
+        redirect_to :action => :new_baby,
+          :gender => params[:gender],
+          :given_name => params[:given_name],
+          :family_name => params[:family_name],
+          :family_name2 => params[:family_name2],
+          :address2 => params[:address2], 
+          :identifier => params[:identifier],
+          :relation => params[:relation]
+      else
+        redirect_to :action => :new, :gender => params[:gender], 
+          :given_name => params[:given_name],
+          :family_name => params[:family_name],
+          :family_name2 => params[:family_name2],
+          :address2 => params[:address2],
+          :identifier => params[:identifier],
+          :relation => params[:relation],
+          :patient_id => params[:patient_id],
+          :cat => params[:cat]
+      end
+		end
+	end
+
+  def confirm
+    redirect_to "/patients/show/#{params[:found_person_id]}" and return
+  end
+
+  private
+
+	def search_complete_url(found_person_id, primary_person_id, category)
+    # raise category.to_yaml
+    
+		unless (primary_person_id.blank?)
+			# Notice this swaps them!
+			new_relationship_url(:patient_id => primary_person_id, :relation => found_person_id)
+		else
+			#
+			# Hack reversed to continue testing overnight
+			#
+			# TODO: This needs to be redesigned!!!!!!!!!!!
+			#
+			#url_for(:controller => :encounters, :action => :new, :patient_id => found_person_id)
+			patient = Person.find(found_person_id).patient
+			show_confirmation = CoreService.get_global_property_value('show.patient.confirmation').to_s == "true" rescue false
+			if show_confirmation
+				url_for(:controller => :people, :action => :confirm , :found_person_id =>found_person_id, :cat => category)
+			else
+				next_task(patient)
+			end
+		end
+	end
 end
  

@@ -55,23 +55,23 @@ pos = 1
       people[<%= pos %>]["Current Residence"] = null;
     }
 
-  <% if !person.mothers_surname.blank? %>  
+  <% if !person.mothers_surname.blank? %>
       people[<%= pos %>]["Mother Surname"] = "<%=h person.mothers_surname -%>";
   <% end %>
 
-  <% if !person.arv_number.blank? %> 
+  <% if !person.arv_number.blank? %>
       people[<%= pos %>]["ARV Number"] = "<%=h person.arv_number rescue "" -%>";
   <% end %>
 
-  <% if !person.national_id.blank? %>     
-      people[<%= pos %>]["Patient National ID"] = "<%=h person.national_id rescue "" -%>";
+  <% if !person.national_id.blank? %>
+      people[<%= pos %>]["Person National ID"] = "<%=h person.national_id rescue "" -%>";
   <% end %>
 
-  <% if !person.eid_number.blank? %>    
+  <% if !person.eid_number.blank? %>
       people[<%= pos %>]["EID Number"] = "<%=h person.eid_number rescue "" -%>";
   <% end %>
 
-  <% if !person.pre_art_number.blank? %>    
+  <% if !person.pre_art_number.blank? %>
       people[<%= pos %>]["Pre-ART Number"] = "<%=h person.pre_art_number rescue "" -%>";
   <% end %>
   <%
@@ -79,8 +79,8 @@ pos = 1
   pos = pos + 1
 end -%>
 
-<% if (params[:relation].strip rescue "") != "" %>
-    var tt_cancel_destination = "/patients/guardians_dashboard?patient_id=<%=h params[:relation] -%>"
+<% if (params[:cat].strip rescue "").downcase != "baby" %>
+    var tt_cancel_destination = "/patients/show/<%=h params[:patient_id] -%>"
 <% else %>
     var tt_cancel_destination = "/clinic"
 <% end %>
@@ -89,7 +89,7 @@ end -%>
     __$('nextButton').innerHTML = "<span>" + text + "</span>";
     
     if(pos){
-      document.forms[0].action = "create";
+      document.forms[0].action = "create?patient_id=<%= params[:patient_id] %>&cat=<%= params[:cat] %>";
       __$('nextButton').onmousedown = function(){
         document.forms[0].submit();
       }
@@ -191,7 +191,7 @@ end -%>
         }
       }
     } else {
-      document.forms[0].action = "select";
+      document.forms[0].action = "select?patient_id=<%= params[:patient_id] %>&cat=<%= params[:cat] %>";
       __$('nextButton').onmousedown = function(){
         gotoNextPage();
       }
@@ -222,11 +222,11 @@ end -%>
   }
    
   function makeRemoteButton(){
-    <% if create_from_dde_server && false %>
-    __$("backButton").innerHTML = "<span>Remote Search</span>";
-    __$('backButton').setAttribute("onmousedown","search_remote();");
-    __$('backButton').style.display = "block";
-    <%end%>
+<% if create_from_dde_server && false %>
+      __$("backButton").innerHTML = "<span>Remote Search</span>";
+      __$('backButton').setAttribute("onmousedown","search_remote();");
+      __$('backButton').style.display = "block";
+<%end%>
   }
     
   function createNewSearchButton(){
@@ -235,7 +235,7 @@ end -%>
   }
 
   function newSearch() {
-    document.location = "/people/search?relation=<%=h params[:relation] -%>"
+    document.location = "/people/search?relation=<%=h params[:relation] -%>&cat=<%= params[:cat] %>"
   }
 
   function setAttributes() {
@@ -303,7 +303,7 @@ end -%>
       
       people[pos]["Current Residence"] = remote_people[i]["person"]["data"]["addresses"]["city_village"];
       
-      people[pos]["Patient National ID"] = remote_people[i]["person"]["value"];
+      people[pos]["Person National ID"] = remote_people[i]["person"]["value"];
       
       var li = document.createElement("li");
       li.id = i + 1;
@@ -314,12 +314,12 @@ end -%>
         people[pos]["Birthdate"] + ", " + people[pos]["Home District"];
       li.setAttribute("tag", ((i + 1)/2 > 0 ? "odd" : "even"));
       li.onmousedown = function(){
-        changeNextButtonText('Select Patient', this.getAttribute("pos")); 
+        changeNextButtonText('Select Person', this.getAttribute("pos"));
         updateTouchscreenInputForSelect(this); 
         changeSummary(this.id);
       }
       li.onclick = function(){
-        changeNextButtonText('Select Patient', this.getAttribute("pos")); 
+        changeNextButtonText('Select Person', this.getAttribute("pos"));
         updateTouchscreenInputForSelect(this); 
         changeSummary(this.id);
       }
@@ -343,11 +343,28 @@ end -%>
   <% if (params[:gender].blank? || params[:given_name].blank? || params[:family_name].blank?) && (params[:identifier].blank?) %>
 
     <% form_tag "search", :method => :get do %>
-      <%= text_field_tag :given_name, params[:given_name], {:field_type => 'alpha', :helpText => 'First name', :ajaxURL => '/person_names/given_names?search_string=', :allowFreeText => true }%>
-      <%= text_field_tag :family_name, params[:family_name], {:field_type => 'alpha', :helpText => 'Last name', :ajaxURL => '/person_names/family_names?search_string=', :allowFreeText => true }%>
-      Gender: <%= select_tag :gender, options_for_select({"" => "", "Male" => "M", "Female" => "F"}), {:helpText => "Gender"} %>
+      <%= text_field_tag :given_name, params[:given_name],
+        {:field_type => 'alpha',
+        :helpText => "#{params[:cat].titleize} First name",
+        :ajaxURL => '/person_names/given_names?search_string=',
+        :allowFreeText => true }%>
+  
+      <%= text_field_tag :family_name, params[:family_name],
+        {:field_type => 'alpha',
+        :helpText => "#{params[:cat].titleize} Last name",
+        :ajaxURL => '/person_names/family_names?search_string=',
+        :allowFreeText => true }%>
+
+      Gender: <%= select_tag :gender, options_for_select({"" => "", "Male" => "M", "Female" => "F"}), 
+        {:helpText => "#{params[:cat].titleize} Gender"} %>
       <%= hidden_field_tag :create_patient, params[:create_patient] %>
       <%= hidden_field_tag :relation, params[:relation] %>
+      <input type="hidden" id="cat" name="cat" value="<%=h params[:cat] -%>" />
+      
+      <% if !params[:patient_id].nil? %>
+        <input type="hidden" id="patient_id" name="patient_id" value="<%=h params[:patient_id] -%>" />
+      <% end %>
+
       <%= submit_tag "Find person" %>
     <% end -%>
   <% end -%>
@@ -355,13 +372,13 @@ end -%>
     <% form_tag "select", :method => :post do %>
       <% if @people.blank? %>
         <% if @relation.blank? %>
-          <label for="person">No patients were found:</label>
+          <label for="person">No people were found:</label>
         <% else %>
           <label for="person">No guardians were found:</label>
         <% end %>
       <% else -%>
         <% if @relation.blank? %>
-          <label for="person">Select the patient from the following</label>
+          <label for="person">Select the person from the following</label>
         <% else %>
           <label for="person">Select the guardian from the following</label>
         <% end %>
@@ -369,27 +386,35 @@ end -%>
       <select name="person[id]" id="person" dualView="true" dualViewOptions="people" tt_onLoad="makeRemoteButton()">
         <!--option onmousedown="search_remote()">Search from remote server for person with name <%=h params[:given_name] -%> <%=h params[:family_name] -%></option-->
 
-			<% if @relation.blank? %>
-					<% if params[:identifier] %>
-						<option value="0" onmousedown="changeNextButtonText('New Patient')">Create a new person with the identifier <%=h params[:identifier] -%></option>
-					<% else %>
-						<option value="0" onmousedown="changeNextButtonText('New Patient')">Create a new person with the name <%=h params[:given_name] -%> <%=h params[:family_name] -%></option>
-					<% end %>
-			 <% else %>
-					<% if params[:identifier] %>
-						<option value="0" onmousedown="changeNextButtonText('New Guardian')">Create a new person with the identifier <%=h params[:identifier] -%></option>
-					<% else %>
-						<option value="0" onmousedown="changeNextButtonText('New Guardian')">Create a new person with the name <%=h params[:given_name] -%> <%=h params[:family_name] -%></option>
-					<% end %>
-			 <% end %>
-        
+        <% if @relation.blank? %>
+          <% if params[:identifier] %>
+            <option value="0" onmousedown="changeNextButtonText('New Person')">
+              Create a new person with the identifier <%=h params[:identifier] -%>
+            </option>
+          <% else %>
+            <option value="0" onmousedown="changeNextButtonText('New Person')">
+              Create a new person with the name <%=h params[:given_name] -%> <%=h params[:family_name] -%>
+            </option>
+          <% end %>
+        <% else %>
+          <% if params[:identifier] %>
+            <option value="0" onmousedown="changeNextButtonText('New Guardian')">
+              Create a new person with the identifier <%=h params[:identifier] -%>
+            </option>
+          <% else %>
+            <option value="0" onmousedown="changeNextButtonText('New Guardian')">
+              Create a new person with the name <%=h params[:given_name] -%> <%=h params[:family_name] -%>
+            </option>
+          <% end %>
+        <% end %>
+
         <% @patients.each do | patient |
           next if patient.blank? -%>
-				<% if @relation.blank? %>
-					<option value="<%= patient.person_id %>" onmousedown="changeNextButtonText('Select Patient')">
-				<% else %>
-					<option value="<%= patient.person_id %>" onmousedown="changeNextButtonText('Select Guardian')">
-				<% end %>
+          <% if @relation.blank? %>
+            <option value="<%= patient.person_id %>" onmousedown="changeNextButtonText('Select Person')">
+            <% else %>
+            <option value="<%= patient.person_id %>" onmousedown="changeNextButtonText('Select Guardian')">
+            <% end %>
             <%=h patient.name -%> (<%= patient.sex %>)
             <% unless patient.birth_date.blank? %> <%=h patient.birth_date -%><% end %>,
             <% unless patient.current_residence.blank? %> <%=h patient.current_residence -%> <% end %>,
@@ -404,6 +429,12 @@ end -%>
       <input type="hidden" id="family_name2" name="family_name2" value="<%=h params[:family_name2] -%>" />
       <input type="hidden" id="address2" name="address2" value="<%=h params[:address2] -%>" />
       <input type="hidden" id="relation" name="relation" value="<%=h params[:relation] -%>" />
+      <input type="hidden" id="cat" name="cat" value="<%=h params[:cat] -%>" />
+
+      <% if !params[:patient_id].nil? %>
+        <input type="hidden" id="patient_id" name="patient_id" value="<%=h params[:patient_id] -%>" />
+      <% end %>
+
     <% end -%>
   <% end -%>
 

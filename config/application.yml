@@ -14,8 +14,7 @@ production:
  clinician.roles: Weight and Height,TTV Vaccination,BP,ANC Visit Type,Obstetric History,Medical History,Surgical History,Social History,Lab Results,ANC Examination,Current Pregnancy,Manage Appointments,Give Drugs,Update Outcome,HIV Clinic Registration,HIV Staging,HIV Reception,HIV Clinic Consultation,ART Adherence,Manage ART Prescriptions,ART Drug Dispensations,Registration,View Reports 
  create.from.remote: false
  create.from.dde.server: true
- anc_link: localhost:3005
- art_link: localhost:3000
+ demographics.home_village: true
  
 development:
  create_from_remote: no
@@ -34,8 +33,7 @@ development:
  clinician.roles: Weight and Height,TTV Vaccination,BP,ANC Visit Type,Obstetric History,Medical History,Surgical History,Social History,Lab Results,ANC Examination,Current Pregnancy,Manage Appointments,Give Drugs,Update Outcome,HIV Clinic Registration,HIV Staging,HIV Reception,HIV Clinic Consultation,ART Adherence,Manage ART Prescriptions,ART Drug Dispensations,Registration,View Reports
  create.from.remote: false
  create.from.dde.server: true
- anc_link: localhost:3005
- art_link: localhost:3000
+ demographics.home_village: true
  
 test: &TEST
  create_from_remote: no
