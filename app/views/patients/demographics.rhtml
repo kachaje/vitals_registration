@@ -68,6 +68,13 @@
                     @person.id %>&cat=<%= (params["cat"] rescue "") %>&family_name=<%= @last_name %>">Last Name</a></td>
           <td class='data'><%=@last_name%></td>
         </tr>
+        <% if @update_patient.gender == "F" and @update_patient.age > 10 %>
+          <tr>
+            <td class='title'><a href="edit_demographics?patient_id=<%=@patient.id%>&field=maiden_name&person_id=<%=
+                    @person.id %>&cat=<%= (params["cat"] rescue "") %>&family_name=<%= @last_name %>">Maiden Name</a></td>
+            <td class='data'><%=@update_patient.maiden_name%></td>
+          </tr>
+        <% end %>
         <tr>
           <td class='title'><a href="edit_demographics?patient_id=<%=@patient.id%>&field=birthdate&person_id=<%=
                     @person.id %>&cat=<%= (params["cat"] rescue "") %>">Birthdate </a></td>
@@ -82,15 +89,40 @@
         <% if @baby == false %>
           <tr>
             <td class='title'><a href="edit_demographics?patient_id=<%=@patient.id%>&person_id=<%=
+                    @person.id %>&cat=<%= (params["cat"] rescue "") %>&field=citizenship">Nationality</a></td>
+            <td class='data'> <%= @update_patient.nationality %></td>
+          </tr>
+          <tr>
+            <td class='title'><a href="edit_demographics?patient_id=<%=@patient.id%>&person_id=<%=
                     @person.id %>&cat=<%= (params["cat"] rescue "") %>&field=address1"> Current Residence</a></td>
             <td class='data'> <%= @update_patient.current_address1 %></td>
           </tr>
           <tr>
             <td class='title'><a href="edit_demographics?patient_id=<%=@patient.id%>&person_id=<%=
-                    @person.id %>&cat=<%= (params["cat"] rescue "") %>&field=address2">Current Traditional Authority</a></td>
+                    @person.id %>&cat=<%= (params["cat"] rescue "") %>&field=current_district">Current Traditional Authority</a></td>
             <td class='data'><%= @update_patient.current_address2 %></td>
           </tr>
           <tr>
+            <td class='title'><a href="edit_demographics?patient_id=<%=@patient.id%>&person_id=<%=
+                    @person.id %>&cat=<%= (params["cat"] rescue "") %>&field=current_district"> Current District</a></td>
+            <td class='data'> <%= @update_patient.current_district %></td>
+          </tr>
+          <tr>
+            <td class='title'><a href="edit_demographics?patient_id=<%=@patient.id%>&person_id=<%=
+                    @person.id %>&cat=<%= (params["cat"] rescue "") %>&field=home_village">Home Village</a></td>
+            <td class='data'> <%= @update_patient.home_village %></td>
+          </tr>
+          <tr>
+            <td class='title'><a href="edit_demographics?patient_id=<%=@patient.id%>&person_id=<%=
+                    @person.id %>&cat=<%= (params["cat"] rescue "") %>&field=home_district">Home Traditional Authority</a></td>
+            <td class='data'><%= @update_patient.home_ta %></td>
+          </tr>
+          <tr>
+            <td class='title'><a href="edit_demographics?patient_id=<%=@patient.id%>&person_id=<%=
+                    @person.id %>&cat=<%= (params["cat"] rescue "") %>&field=home_district">Home District</a></td>
+            <td class='data'> <%= @update_patient.home_district %></td>
+          </tr>
+          <!--tr>
             <td class='title'> <a href="edit_demographics?patient_id=<%=@patient.id%>&person_id=<%=
                     @person.id %>&cat=<%= (params["cat"] rescue "") %>&field=primary_phone">Primary Phone</a></td>
             <td class='data'><%=@primary_phone%></td>
@@ -99,7 +131,7 @@
             <td class='title'><a href="edit_demographics?patient_id=<%=@patient.id%>&person_id=<%=
                     @person.id %>&cat=<%= (params["cat"] rescue "") %>&field=occupation">Occupation</a></td>
             <td class='data'><%=@occupation%><br/> </td>
-          </tr>
+          </tr-->
         <% end %>
 
       </table>

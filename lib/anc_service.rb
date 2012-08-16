@@ -1393,6 +1393,16 @@ module ANCService
           PersonAttributeType.find_by_name(attribute).id,self.person.id]).value rescue nil
     end
 
+    def get_full_attribute(attribute)
+      PersonAttribute.find(:first,:conditions =>["voided = 0 AND person_attribute_type_id = ? AND person_id = ?",
+          PersonAttributeType.find_by_name(attribute).id,self.person.id]) rescue nil
+    end
+
+    def set_attribute(attribute, value)
+      PersonAttribute.create(:person_id => self.person.person_id, :value => value,
+        :person_attribute_type_id => (PersonAttributeType.find_by_name(attribute).id))
+    end
+
     def phone_numbers
       # PersonAttribute.phone_numbers(self.person.person_id)
       home_phone_id       = PersonAttributeType.find_by_name('HOME PHONE NUMBER').person_attribute_type_id
@@ -1508,16 +1518,116 @@ module ANCService
 
     def mother
       self.patient.relationships.find(:last, :conditions => ["relationship = ?",
-        RelationshipType.find_by_b_is_to_a("Mother").id]) rescue nil
+          RelationshipType.find_by_b_is_to_a("Mother").id]) rescue nil
     end
 
     def father
       self.patient.relationships.find(:last, :conditions => ["relationship = ?",
-        RelationshipType.find_by_b_is_to_a("Father").id]) rescue nil
+          RelationshipType.find_by_b_is_to_a("Father").id]) rescue nil
     end
 
     def siblings
-      
+      Relationship.find(:all, :conditions => ["person_b = ? AND person_a != ?",
+          self.mother.relation.id, self.patient.id]) rescue []
+    end
+
+    def export_person
+      mother = ANCService::ANC.new(self.mother.relation.patient) rescue nil
+      father = ANCService::ANC.new(self.father.relation.patient) rescue nil
+      {
+        "birthdate_estimated" => (self.person.birthdate_estimated rescue nil),
+        "gender" => (self.person.gender rescue nil),
+        "birthdate" => (self.person.birthdate rescue nil),
+        "names" => {
+          "given_name" => self.first_name,
+          "family_name" => self.last_name
+        },
+        "patient" => {
+          "identifiers" => {
+            "diabetes_number" => "",
+            "national_id" => self.national_id
+          }
+        },
+        "attributes" => {
+          "occupation" => (self.get_full_attribute("Occupation").value rescue nil),
+          "cell_phone_number" => (self.get_full_attribute("Cell Phone Number").value rescue nil),
+          "citizenship" => (self.get_full_attribute("Citizenship").value rescue nil),
+          "race" => (self.get_full_attribute("Race").value rescue nil)
+        },
+        "addresses" => {
+          "address1" => (self.current_address1 rescue nil),
+          "city_village" => (self.current_address2 rescue nil),
+          "address2" => (self.current_district rescue nil),
+          "subregion" => (self.home_district rescue nil),
+          "county_district" => (self.home_ta rescue nil),
+          "neighborhood_cell" => (self.home_village rescue nil)
+        },
+        "mother" => {
+          "birthdate_estimated" => (mother.person.birthdate_estimated rescue nil),
+          "gender" => (mother.person.gender rescue nil),
+          "birthdate" => (mother.person.birthdate rescue nil),
+          "names" => {
+            "given_name" => (mother.first_name rescue nil),
+            "family_name" => (mother.last_name rescue nil)
+          },
+          "patient" => {
+            "identifiers" => {
+              "diabetes_number" => "",
+              "national_id" => (mother.national_id rescue nil)
+            }
+          },
+          "attributes" => {
+            "occupation" => (mother.get_full_attribute("Occupation").value rescue nil),
+            "cell_phone_number" => (mother.get_full_attribute("Cell Phone Number").value rescue nil),
+            "citizenship" => (mother.get_full_attribute("Citizenship").value rescue nil),
+            "race" => (mother.get_full_attribute("Race").value rescue nil)
+          },
+          "addresses" => {
+            "address1" => (mother.current_address1 rescue nil),
+            "city_village" => (mother.current_address2 rescue nil),
+            "address2" => (mother.current_district rescue nil),
+            "subregion" => (mother.home_district rescue nil),
+            "county_district" => (mother.home_ta rescue nil),
+            "neighborhood_cell" => (mother.home_village rescue nil)
+          }
+        },
+        "father" => {
+          "birthdate_estimated" => (father.person.birthdate_estimated rescue nil),
+          "gender" => (father.person.gender rescue nil),
+          "birthdate" => (father.person.birthdate rescue nil),
+          "names" => {
+            "given_name" => (father.first_name rescue nil),
+            "family_name" => (father.last_name rescue nil)
+          },
+          "patient" => {
+            "identifiers" => {
+              "diabetes_number" => "",
+              "national_id" => (father.national_id rescue nil)
+            }
+          },
+          "attributes" => {
+            "occupation" => (father.get_full_attribute("Occupation").value rescue nil),
+            "cell_phone_number" => (father.get_full_attribute("Cell Phone Number").value rescue nil),
+            "citizenship" => (father.get_full_attribute("Citizenship").value rescue nil),
+            "race" => (father.get_full_attribute("Race").value rescue nil)
+          },
+          "addresses" => {
+            "address1" => (father.current_address1 rescue nil),
+            "city_village" => (father.current_address2 rescue nil),
+            "address2" => (father.current_district rescue nil),
+            "subregion" => (father.home_district rescue nil),
+            "county_district" => (father.home_ta rescue nil),
+            "neighborhood_cell" => (father.home_village rescue nil)
+          }
+        },
+        "facility" => {
+          "Health District" => (self.get_full_attribute("Health District").value rescue nil),
+          "Health Center" => (self.get_full_attribute("Health Center").value rescue nil),
+          "Provider Title" => (self.get_full_attribute("Provider Title").value rescue nil),
+          "Hospital Date" => (self.get_full_attribute("Hospital Date").value rescue nil),
+          "Provider Name" => (self.get_full_attribute("Provider Name").value rescue nil)
+        }
+      }
     end
 
   end
@@ -1792,4 +1902,84 @@ module ANCService
 
   end
 
+  def self.import_person(person)
+    if !person["patient"]["identifiers"]["national_id"].nil? and !person["patient"]["identifiers"]["national_id"].blank?
+      child = person.reject{|key,value| key.match(/father|mother|facility/) }
+
+      found_person_data = self.search_by_identifier(child["patient"]["identifiers"]["national_id"])
+
+      found_person = self.create_from_form(child) if found_person_data.nil?
+
+      child_id = nil
+      if !found_person_data.nil?
+        child_id = found_person_data.last.id
+      else
+        child_id = found_person.last.id
+      end
+
+      found_mother_data = self.search_by_identifier(person["mother"]["patient"]["identifiers"]["national_id"]) rescue nil?
+      found_mother = self.create_from_form(person["mother"]) if found_mother_data.nil?
+
+      mother_id = nil
+      if !found_mother_data.nil?
+        mother_id = found_mother_data.last.id rescue nil
+      else
+        mother_id = found_mother.last.id rescue nil
+      end
+
+      if !mother_id.nil?
+        mother_type = RelationshipType.find_by_b_is_to_a("Mother").relationship_type_id
+
+        Relationship.find(:all, :conditions => ["person_a = ? AND relationship = ?",
+            child_id, mother_type]).each{|r|
+          r.void
+        }
+
+        Relationship.create(
+          # :creator => User.first.id,
+          :person_a => child_id,
+          :person_b => mother_id,
+          :relationship => mother_type)
+      end
+      
+      found_father_data = self.search_by_identifier(person["father"]["patient"]["identifiers"]["national_id"]) rescue nil?
+      found_father = self.create_from_form(person["father"]) if found_father_data.nil?
+
+      father_id = nil
+      if !found_father_data.nil?
+        father_id = found_father_data.last.id rescue nil
+      else
+        father_id = found_father.last.id rescue nil
+      end
+
+      if !father_id.nil?
+        father_type = RelationshipType.find_by_b_is_to_a("Father").relationship_type_id
+
+        Relationship.find(:all, :conditions => ["person_a = ? AND relationship = ?",
+            child_id, father_type]).each{|r|
+          r.void
+        }
+
+        Relationship.create(
+          # :creator => User.first.id,
+          :person_a => child_id,
+          :person_b => father_id,
+          :relationship => father_type)
+
+      end
+
+      facility = ["Health Center", "Provider Name", "Provider Title", "Hospital Date", "Health District"]
+        
+      patient = ANCService::ANC.new(Patient.find(child_id)) rescue nil
+
+      facility.each do|field|
+        if !person["facility"][field].nil? && !person["facility"][field].blank?
+          patient.set_attribute("#{field}", "#{person["facility"][field]}")
+        end
+      end
+
+      return "Baby Added"
+    end
+    return "Baby Not Added"
+  end
 end

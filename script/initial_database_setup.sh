@@ -53,6 +53,7 @@ mysql --user=$USERNAME --password=$PASSWORD $DATABASE < db/migrate/create_weight
 mysql --user=$USERNAME --password=$PASSWORD $DATABASE < db/migrate/insert_weight_for_ages.sql
 mysql --user=$USERNAME --password=$PASSWORD $DATABASE < db/migrate/global_property.sql
 mysql --user=$USERNAME --password=$PASSWORD $DATABASE < db/relationships.sql
+mysql --user=$USERNAME --password=$PASSWORD $DATABASE < db/custom.sql
 
 #rake openmrs:bootstrap:load:defaults RAILS_ENV=$ENV
 #rake openmrs:bootstrap:load:site SITE=$SITE RAILS_ENV=production#

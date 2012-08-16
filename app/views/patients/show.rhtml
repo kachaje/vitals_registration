@@ -101,6 +101,11 @@
         <select id="tabs">
           <option value="/patients/summary/<%= @patient.id %>">Parents</option>
           <option value="/patients/siblings/<%= @patient.id %>">Siblings</option>
+          <option value="/patients/provider_tab/<%= @patient.id %>">Provider Details</option>
+        </select>
+        <select id="navigation_links">
+          <option value="/patients/provider_details/<%= @patient.id %>"
+                  link="/patients/provider_details/<%= @patient.id %>">Provider Details</option>
         </select>
       </td>
     </tr>

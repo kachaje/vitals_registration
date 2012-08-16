@@ -23,33 +23,97 @@
     </script>
   </head>
   <body>
-    <table style="margin: 10px; width: 98%;" cellspacing="10">      
+    <table style="margin: 10px; width: 98%; " cellspacing="10">
       <tr>       
         <td style="vertical-align: top; width: 50%; border: 1px solid #ccc; border-radius: 20px;" colspan="2">
           <table cellpadding="10" width="100%">
             <tr>
-              <td colspan="3" style="min-width: 90%;">
-                <b style="font-size: 1.2em;">Siblings</b>
-                <% if !@father.nil?  %>
-                  <div class="void" relationship="<%= @father.id %>" style="float: right;">
-                    <img src="/images/cancel_flat_small_red.png" alt="X" />
-                  </div>
-                <% end %>
+              <td colspan="6" style="min-width: 90%;">
+                <b style="font-size: 1.2em;">Siblings</b>                
               </td>
             </tr>
             <% if @siblings.nil? || @siblings.blank?  %>
               <tr>
-                <td colspan="2">
+                <td colspan="6">
                   <i>Undefined</i>
                 </td>
               </tr>
             <% else %>
-              <tr>
+              <tr style="background-color: #6281A7; color: #fff;">
+                <td style="width: 2%;">
+                  &nbsp;
+                </td>
+                <td style="width: 6%;">
+                  <b>Sex</b>
+                </td>
+                <td style="width: 30%;">
+                  <b>Name</b>
+                </td>
+                <td style="width: 20%;">
+                  <b>Date of Birth</b>
+                </td>
+                <td style="width: 10%;">
+                  <b>Age(Yrs)</b>
+                </td>
                 <td>
-                  <b>Patient ID:</b>
+                  <b>Patient ID</b>
                 </td>
               </tr>
             <% end %>
+            <tr>
+              <td colspan="6">
+                <div style="height: 180px; width: 100%; overflow: auto;">
+                  <table cellpadding="10" width="100%">
+                    <% if @siblings.nil? || @siblings.blank?  %>
+                      <tr>
+                        <td colspan="6">
+                          <i>Undefined</i>
+                        </td>
+                      </tr>
+                    <% else %>
+                      <% @i = 1 %>
+                      <% @siblings.each do |sibling| %>
+                        <tr>
+                          <td>
+                            <b><%= @i %></b>
+                          </td>
+                          <td style="text-align: center;">
+                            <img src="/images/<%= sibling.sex.downcase %>.gif" />
+                          </td>
+                          <td>
+                            <%= sibling.name %>
+                          </td>
+                          <td>
+                            <%= sibling.birthdate_formatted %>
+                          </td>
+                          <td style="text-align: center;">
+                            <%= sibling.age %>
+                          </td>
+                          <td>
+                            <%= sibling.national_id_with_dashes %>
+                          </td>
+                        </tr>
+                        <% @i = @i + 1 %>
+                      <% end %>
+                      <tr>
+                        <td style="width: 2%;">
+                        </td>
+                        <td style="width: 6%;">
+                        </td>
+                        <td style="width: 35%;">
+                        </td>
+                        <td style="width: 22%;">
+                        </td>
+                        <td style="width: 12%;">
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    <% end %>
+                  </table>
+                </div>
+              </td>
+            </tr>
           </table>
         </td>
       </tr>

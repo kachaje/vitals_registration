@@ -370,8 +370,10 @@
                 <td style="text-align: left; padding-top: 20px; padding-left: 80px;">
                   Name:
                 </td>
-                <td colspan="2" style="text-align: left; padding-bottom: 0px; padding-top: 20px;" class="cell">
-                  &nbsp;
+                <td colspan="2" style="text-align: left; padding-bottom: 0px; padding-top: 20px;  padding-left: 20px;"
+                    class="cell">
+                  <% @name = @anc_patient.get_full_attribute("Provider Name") rescue nil %>
+                  <%= @name.value if !@name.nil? %>&nbsp;
                 </td>
                 <td style="text-align: center; padding-bottom: 0px; padding-top: 20px;">
                   &nbsp;
@@ -384,8 +386,10 @@
                 <td style="text-align: left; padding-top: 20px; padding-left: 80px;">
                   Title:
                 </td>
-                <td colspan="2" style="text-align: left; padding-bottom: 0px; padding-top: 20px;" class="cell">
-                  &nbsp;
+                <td colspan="2" style="text-align: left; padding-bottom: 0px; padding-top: 20px;  padding-left: 20px;"
+                    class="cell">
+                  <% @title = @anc_patient.get_full_attribute("Provider Title") rescue nil %>
+                  <%= @title.value if !@title.nil? %>&nbsp;
                 </td>
                 <td style="text-align: center; padding-bottom: 0px; padding-top: 20px;">
                   &nbsp;
@@ -412,8 +416,10 @@
                 <td style="text-align: left; padding-top: 20px; padding-left: 80px;">
                   Hospital Date:
                 </td>
-                <td colspan="2" style="text-align: left; padding-bottom: 0px; padding-top: 20px;" class="cell">
-                  &nbsp;
+                <td colspan="2" style="text-align: left; padding-bottom: 0px; padding-top: 20px;  padding-left: 20px;"
+                    class="cell">
+                  <% @facility_date = @anc_patient.get_full_attribute("Hospital Date") rescue nil %>
+                  <%= @facility_date.value.to_date.strftime("%d/%b/%Y") if !@facility_date.nil? %>&nbsp;
                 </td>
                 <td style="text-align: center; padding-bottom: 0px; padding-top: 20px;">
                   &nbsp;

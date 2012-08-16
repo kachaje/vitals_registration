@@ -91,9 +91,14 @@ class PeopleController < GenericPeopleController
 					found_person_data = PatientService.find_remote_person_by_identifier(params[:identifier])
 					found_person = PatientService.create_from_form(found_person_data['person']) unless found_person_data.nil?
 				end
-			end
-      
+			end     
+
 			if found_person
+       
+        patient = DDEService::Patient.new(found_person.patient)
+
+        patient.check_old_national_id(params[:identifier])
+
 				if params[:cat] && params[:patient_id] 
           redirect_to "/relationships/new?patient_id=#{params[:patient_id]}&relation=#{found_person.id
             }&cat=#{params[:cat]}" and return
@@ -123,7 +128,8 @@ class PeopleController < GenericPeopleController
 
 			redirect_to :controller => :patients, :action => :show, :id => params[:person]
 		else
-			# redirect_to search_complete_url(params[:person][:id], params[:relation], params[:cat]) and return unless params[:person][:id].blank? || params[:person][:id] == '0'
+      
+			redirect_to search_complete_url(params[:person][:id], params[:relation], params[:cat]) and return if (params[:person][:id].blank? || params[:person][:id] == '0') && params[:cat] != "baby"
       
       redirect_to "/relationships/new?patient_id=#{params[:patient_id]}&relation=#{params[:person][:id]
             }&cat=#{params[:cat]}" and return unless params[:person][:id].blank? || params[:person][:id] == '0'

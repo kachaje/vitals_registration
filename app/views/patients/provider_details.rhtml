@@ -1,0 +1,57 @@
+<script type="text/javascript" language="javascript">
+  <!--
+  tt_cancel_show = "/patients/show/<%= @patient.id %>";
+  tt_cancel_destination = "/patients/show/<%= @patient.id %>";
+
+  function set_ajaxURL_for_suggestions(url, filter_value) {
+    $('touchscreenInput'+tstCurrentPage).setAttribute('ajaxURL', url + filter_value + "&search_string=");
+    listSuggestions(tstCurrentPage);
+  }
+
+  //-->
+</script>
+
+<% form_tag :controller => "patients", :action => "create_provider" do %>
+
+  <%= hidden_field_tag "patient_id", @patient.id %>
+
+  <%= text_field_tag "ProviderName", nil,
+    {
+    :helptext => "Provider Name",
+    :field_type => "password"
+  } %>
+
+  <%= select_tag "ProviderTitle", options_for_select(["","Dr","Mr","Mrs","Ms","Miss"]),
+    {
+    :helptext => "Provider Title"
+  } %>
+
+  <p><label for="region_region_name">Region</label></br>
+    <%= text_field "region" , 'region_name',
+      :helpText => "Region",
+      :tt_requireNextClick => false,
+      :tt_onLoad => "$('nextButton').style.display = 'none';",
+      :ajaxURL => '/people/region/Region?value=' %></p>
+
+  <%= text_field_tag "district", nil, {
+    :ajaxURL => '', :field_type => 'alpha',
+    :tt_requireNextClick => false,
+    :helpText => "District", :allowFreeText => false,
+    :tt_onLoad => "$('nextButton').style.display = 'none'; " +
+      "set_ajaxURL_for_suggestions('/people/district/District?filter_value=',document.getElementById('region_region_name').value);" } %>
+
+  <%= text_field_tag "Hospital", nil,
+    {
+    :helptext => "Hospital Name",
+    :allowFreeText => true,
+    :ajaxURL => "/patients/static_locations?search_string=",
+    :tt_onLoad => "$('nextButton').style.display = 'block'; "
+  } %>
+
+  <%= text_field_tag "HospitalDate", nil,
+    {
+    :helptext => "HospitalDate",
+    :field_type => "date"
+  } %>
+
+<% end %>
