@@ -94,10 +94,11 @@ class PeopleController < GenericPeopleController
 			end     
 
 			if found_person
-       
+=begin
         patient = DDEService::Patient.new(found_person.patient)
 
         patient.check_old_national_id(params[:identifier])
+=end
 
 				if params[:cat] && params[:cat] != "baby" && params[:patient_id]
           redirect_to "/relationships/new?patient_id=#{params[:patient_id]}&relation=#{found_person.id
