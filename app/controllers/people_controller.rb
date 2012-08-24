@@ -99,7 +99,7 @@ class PeopleController < GenericPeopleController
 
         patient.check_old_national_id(params[:identifier])
 
-				if params[:cat] && params[:patient_id] 
+				if params[:cat] && params[:cat] != "baby" && params[:patient_id]
           redirect_to "/relationships/new?patient_id=#{params[:patient_id]}&relation=#{found_person.id
             }&cat=#{params[:cat]}" and return
 				else
@@ -129,10 +129,11 @@ class PeopleController < GenericPeopleController
 			redirect_to :controller => :patients, :action => :show, :id => params[:person]
 		else
       
-			redirect_to search_complete_url(params[:person][:id], params[:relation], params[:cat]) and return if (params[:person][:id].blank? || params[:person][:id] == '0') && params[:cat] != "baby"
+			redirect_to search_complete_url(params[:person][:id], params[:relation], params[:cat]) and return if (!params[:person][:id].blank? || !params[:person][:id] == '0') && params[:cat] == "baby"
       
       redirect_to "/relationships/new?patient_id=#{params[:patient_id]}&relation=#{params[:person][:id]
-            }&cat=#{params[:cat]}" and return unless params[:person][:id].blank? || params[:person][:id] == '0'
+            }&cat=#{params[:cat]}" and return if (!params[:person][:id].blank? || !params[:person][:id] == '0') and
+        (params[:cat] and params[:cat] != "baby")
 
       if params[:cat] and params[:cat] == "baby"
         redirect_to :action => :new_baby,
@@ -159,6 +160,17 @@ class PeopleController < GenericPeopleController
 
   def confirm
     redirect_to "/patients/show/#{params[:found_person_id]}" and return
+  end
+
+  def import_baby
+    User.current = User.first
+    
+    remote_params = params
+    remote_params = remote_params.reject{|key,value| key.match(/controller|action/) }
+    
+    result = ANCService.import_person_no_questions(remote_params) # rescue "Baby Addition Failed"
+
+    render :text => result
   end
 
   private

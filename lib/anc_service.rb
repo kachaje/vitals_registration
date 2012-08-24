@@ -1718,13 +1718,14 @@ module ANCService
     return people
   end
 
-  def self.search_by_identifier(identifier)
+  def self.search_by_identifier(identifier, even_dde = true)
     people = PatientIdentifier.find_all_by_identifier(identifier).map{|id|
       id.patient.person
     } unless identifier.blank? rescue nil
     return people unless people.blank?
     create_from_dde_server = CoreService.get_global_property_value('create.from.dde.server').to_s == "true" rescue false
-    if create_from_dde_server
+
+    if create_from_dde_server && even_dde
       dde_server = GlobalProperty.find_by_property("dde_server_ip").property_value rescue ""
       dde_server_username = GlobalProperty.find_by_property("dde_server_username").property_value rescue ""
       dde_server_password = GlobalProperty.find_by_property("dde_server_password").property_value rescue ""
@@ -1769,12 +1770,13 @@ module ANCService
   end
 
 	def self.create_from_form(params)
+
 		address_params = params["addresses"]
 		names_params = params["names"]
 		patient_params = params["patient"]
 		params_to_process = params.reject{|key,value| key.match(/addresses|patient|names|relation|cell_phone_number|home_phone_number|office_phone_number|agrees_to_be_visited_for_TB_therapy|agrees_phone_text_for_TB_therapy/) }
-		birthday_params = params_to_process.reject{|key,value| key.match(/gender/) }
-		person_params = params_to_process.reject{|key,value| key.match(/birth_|age_estimate|occupation|identifiers/) }
+		birthday_params = params_to_process.reject{|key,value| key.match(/gender|attributes/) }
+		person_params = params_to_process.reject{|key,value| key.match(/birth_|age_estimate|occupation|identifiers|citizenship|race|attributes/) }
 
 		if person_params["gender"].to_s == "Female"
       person_params["gender"] = 'F'
@@ -1784,7 +1786,7 @@ module ANCService
 
 		person = Person.create(person_params)
 
-		unless birthday_params.empty?
+		if !birthday_params.empty? && birthday_params["birthdate"].blank?      
 		  if birthday_params["birth_year"] == "Unknown"
         self.set_birthdate_by_age(person, birthday_params["age_estimate"], person.session_datetime || Date.today)
 		  else
@@ -1811,6 +1813,14 @@ module ANCService
 		person.person_attributes.create(
 		  :person_attribute_type_id => PersonAttributeType.find_by_name("Home Phone Number").person_attribute_type_id,
 		  :value => params["home_phone_number"]) unless params["home_phone_number"].blank? rescue nil
+
+		person.person_attributes.create(
+		  :person_attribute_type_id => PersonAttributeType.find_by_name("Citizenship").person_attribute_type_id,
+		  :value => params["citizenship"]) unless params["citizenship"].blank? rescue nil
+
+		person.person_attributes.create(
+		  :person_attribute_type_id => PersonAttributeType.find_by_name("Race").person_attribute_type_id,
+		  :value => params["race"]) unless params["race"].blank? rescue nil
 
     # TODO handle the birthplace attribute
 
@@ -1982,4 +1992,181 @@ module ANCService
     end
     return "Baby Not Added"
   end
+
+  def self.import_person_no_questions(person)
+    if !person["patient"]["identifiers"]["national_id"].nil? and !person["patient"]["identifiers"]["national_id"].blank?
+      child = person.reject{|key,value| key.match(/father|mother|facility/) }
+
+      found_person_data = self.search_by_identifier(child["patient"]["identifiers"]["national_id"], false)
+
+      found_person = self.create_from_form(child) if found_person_data.blank?
+
+      child_id = nil
+      if !found_person_data.blank?
+        child_id = found_person_data.last.id
+      else
+        child_id = found_person.id
+      end
+
+      found_mother_data = self.search_by_identifier(person["mother"]["patient"]["identifiers"]["national_id"], false) rescue nil?
+      found_mother = self.create_from_form(person["mother"]) if found_mother_data.blank?
+
+      mother_id = nil
+      if !found_mother_data.blank?
+        mother_id = found_mother_data.last.id # rescue nil
+      else
+        mother_id = found_mother.id # rescue nil
+      end
+
+      if !mother_id.blank?
+        mother_type = RelationshipType.find_by_b_is_to_a("Mother").relationship_type_id
+
+        Relationship.find(:all, :conditions => ["person_a = ? AND relationship = ?",
+            child_id, mother_type]).each{|r|
+          r.void
+        }
+
+        Relationship.create(
+          # :creator => User.first.id,
+          :person_a => child_id,
+          :person_b => mother_id,
+          :relationship => mother_type)
+      end
+
+      found_father_data = self.search_by_identifier(person["father"]["patient"]["identifiers"]["national_id"], false) rescue nil?
+      found_father = self.create_from_form(person["father"]) if found_father_data.blank?
+
+      father_id = nil
+      if !found_father_data.blank?
+        father_id = found_father_data.last.id # rescue nil
+      else
+        father_id = found_father.id # rescue nil
+      end
+
+      if !father_id.blank?
+        father_type = RelationshipType.find_by_b_is_to_a("Father").relationship_type_id
+
+        Relationship.find(:all, :conditions => ["person_a = ? AND relationship = ?",
+            child_id, father_type]).each{|r|
+          r.void
+        }
+
+        Relationship.create(
+          # :creator => User.first.id,
+          :person_a => child_id,
+          :person_b => father_id,
+          :relationship => father_type)
+
+      end
+
+      facility = ["Health Center", "Provider Name", "Provider Title", "Hospital Date", "Health District"]
+
+      patient = ANCService::ANC.new(Patient.find(child_id)) rescue nil
+
+      facility.each do|field|
+        if !person["facility"][field].nil? && !person["facility"][field].blank?
+          patient.get_full_attribute("#{field}").void rescue nil
+          patient.set_attribute("#{field}", "#{person["facility"][field]}")
+        end
+      end
+
+      return "Baby Added"
+    end
+    return "Baby Not Added"
+  end
+
+  def self.create_patient_from_dde(params)
+	  address_params = params["person"]["addresses"]
+		names_params = params["person"]["names"]
+		patient_params = params["person"]["patient"]
+    birthday_params = params["person"]
+		params_to_process = params.reject{|key,value|
+      key.match(/identifiers|addresses|patient|names|relation|cell_phone_number|home_phone_number|office_phone_number|agrees_to_be_visited_for_TB_therapy|agrees_phone_text_for_TB_therapy/)
+    }
+		birthday_params = params_to_process["person"].reject{|key,value| key.match(/gender/) }
+		person_params = params_to_process["person"].reject{|key,value| key.match(/birth_|age_estimate|occupation/) }
+
+
+		if person_params["gender"].to_s == "Female"
+      person_params["gender"] = 'F'
+		elsif person_params["gender"].to_s == "Male"
+      person_params["gender"] = 'M'
+		end
+
+		unless birthday_params.empty?
+		  if birthday_params["birth_year"] == "Unknown"
+			  birthdate = Date.new(Date.today.year - birthday_params["age_estimate"].to_i, 7, 1)
+        birthdate_estimated = 1
+		  else
+			  year = birthday_params["birth_year"]
+        month = birthday_params["birth_month"]
+        day = birthday_params["birth_day"]
+
+        month_i = (month || 0).to_i
+        month_i = Date::MONTHNAMES.index(month) if month_i == 0 || month_i.blank?
+        month_i = Date::ABBR_MONTHNAMES.index(month) if month_i == 0 || month_i.blank?
+
+        if month_i == 0 || month == "Unknown"
+          birthdate = Date.new(year.to_i,7,1)
+          birthdate_estimated = 1
+        elsif day.blank? || day == "Unknown" || day == 0
+          birthdate = Date.new(year.to_i,month_i,15)
+          birthdate_estimated = 1
+        else
+          birthdate = Date.new(year.to_i,month_i,day.to_i)
+          birthdate_estimated = 0
+        end
+		  end
+    else
+      birthdate_estimated = 0
+		end
+
+    passed_params = {"person"=>
+        {"data" =>
+          {"addresses"=>
+            {"state_province"=> (address_params["address2"] rescue ""),
+            "address2"=> (address_params["address1"] rescue ""),
+            "city_village"=> (address_params["city_village"] rescue ""),
+            "county_district"=> (address_params["county_district"] rescue "")
+          },
+          "attributes"=>
+            {"occupation"=> (params["person"]["occupation"] rescue ""),
+            "cell_phone_number" => (params["person"]["cell_phone_number"] rescue ""),
+            "citizenship" => (params["person"]["citizenship"] rescue ""),
+            "race" => (params["person"]["race"] rescue "")
+          },
+          "patient"=>
+            {"identifiers"=>
+              {"diabetes_number"=>""}},
+          "gender"=> person_params["gender"],
+          "birthdate"=> birthdate,
+          "birthdate_estimated"=> birthdate_estimated ,
+          "names"=>{"family_name"=> names_params["family_name"],
+            "given_name"=> names_params["given_name"]
+          }}}}
+
+    if !params["remote"]
+
+      @dde_server = GlobalProperty.find_by_property("dde_server_ip").property_value rescue ""
+
+      @dde_server_username = GlobalProperty.find_by_property("dde_server_username").property_value rescue ""
+
+      @dde_server_password = GlobalProperty.find_by_property("dde_server_password").property_value rescue ""
+
+      uri = "http://#{@dde_server_username}:#{@dde_server_password}@#{@dde_server}/people.json/"
+      recieved_params = RestClient.post(uri,passed_params)
+
+      national_id = JSON.parse(recieved_params)["npid"]["value"]
+    else
+      national_id = params["person"]["patient"]["identifiers"]["National_id"]
+    end
+
+	  person = self.create_from_form(params[:person])
+    identifier_type = PatientIdentifierType.find_by_name("National id") || PatientIdentifierType.find_by_name("Unknown id")
+
+    person.patient.patient_identifiers.create("identifier" => national_id,
+      "identifier_type" => identifier_type.patient_identifier_type_id) unless national_id.blank?
+    return person
+  end
+
 end

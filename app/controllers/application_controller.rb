@@ -1,14 +1,14 @@
 class ApplicationController < GenericApplicationController
   
   before_filter :authenticate_user!, :except => ['login', 'logout','remote_demographics',
-    'create_remote', 'mastercard_printable', 'get_token', 'birth_report_printable']
+    'create_remote', 'mastercard_printable', 'get_token', 'birth_report_printable', 'import_baby']
 
   before_filter :set_current_user, :except => ['login', 'logout','remote_demographics',
-    'create_remote', 'mastercard_printable', 'get_token', 'birth_report_printable']
+    'create_remote', 'mastercard_printable', 'get_token', 'birth_report_printable', 'import_baby']
 
 	before_filter :location_required, :except => ['login', 'logout', 'location',
     'demographics','create_remote',
-    'mastercard_printable',
+    'mastercard_printable', 'import_baby',
     'remote_demographics', 'get_token', 'single_sign_in', 'birth_report_printable']
 
   def next_task(patient)

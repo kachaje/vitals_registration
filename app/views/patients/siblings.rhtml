@@ -64,13 +64,7 @@
               <td colspan="6">
                 <div style="height: 180px; width: 100%; overflow: auto;">
                   <table cellpadding="10" width="100%">
-                    <% if @siblings.nil? || @siblings.blank?  %>
-                      <tr>
-                        <td colspan="6">
-                          <i>Undefined</i>
-                        </td>
-                      </tr>
-                    <% else %>
+                    <% if !@siblings.nil? || !@siblings.blank?  %>
                       <% @i = 1 %>
                       <% @siblings.each do |sibling| %>
                         <tr>
