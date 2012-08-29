@@ -235,7 +235,8 @@ end -%>
   }
 
   function newSearch() {
-    document.location = "/people/search?relation=<%=h params[:relation] -%>&cat=<%= params[:cat] %>"
+    document.location = "/people/search?relation=<%=h params[:relation] -%>&cat=<%= params[:cat] %><%= 
+          ((params[:cat] rescue "") != "baby" ?  "&patient_id=#{params[:patient_id]}" : "") -%>"
   }
 
   function setAttributes() {
@@ -361,7 +362,7 @@ end -%>
       <%= hidden_field_tag :relation, params[:relation] %>
       <input type="hidden" id="cat" name="cat" value="<%=h params[:cat] -%>" />
       
-      <% if !params[:patient_id].nil? %>
+      <% if !params[:patient_id].blank? %>
         <input type="hidden" id="patient_id" name="patient_id" value="<%=h params[:patient_id] -%>" />
       <% end %>
 
@@ -431,7 +432,7 @@ end -%>
       <input type="hidden" id="relation" name="relation" value="<%=h params[:relation] -%>" />
       <input type="hidden" id="cat" name="cat" value="<%=h params[:cat] -%>" />
 
-      <% if !params[:patient_id].nil? %>
+      <% if !params[:patient_id].blank? %>
         <input type="hidden" id="patient_id" name="patient_id" value="<%=h params[:patient_id] -%>" />
       <% end %>
 
@@ -457,3 +458,4 @@ end -%>
     //-->
   </script>
 </body>
+

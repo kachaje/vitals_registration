@@ -8,8 +8,10 @@ class PeopleController < GenericPeopleController
       hiv_session = true
     end
     
-    person = PatientService.create_patient_from_dde(params) if create_from_dde_server
+    person = ANCService.create_patient_from_dde(params) if create_from_dde_server
 
+    # raise person.to_yaml
+    
     unless person.blank?
 
       encounter = Encounter.new(params[:encounter])
@@ -129,8 +131,8 @@ class PeopleController < GenericPeopleController
 
 			redirect_to :controller => :patients, :action => :show, :id => params[:person]
 		else
-      
-			redirect_to search_complete_url(params[:person][:id], params[:relation], params[:cat]) and return if (!params[:person][:id].blank? || !params[:person][:id] == '0') && params[:cat] == "baby"
+			redirect_to search_complete_url(params[:person][:id], params[:relation], 
+        params[:cat]) and return if params[:person][:id] != "0" && params[:cat] == "baby"
       
       redirect_to "/relationships/new?patient_id=#{params[:patient_id]}&relation=#{params[:person][:id]
             }&cat=#{params[:cat]}" and return if (!params[:person][:id].blank? || !params[:person][:id] == '0') and

@@ -19,6 +19,7 @@ class GenericApplicationController < ActionController::Base
 		ConceptName
 		Concept
 		Settings
+    BirthReport
 	require "fastercsv"
 
 	helper :all

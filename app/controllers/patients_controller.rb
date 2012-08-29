@@ -8,6 +8,8 @@ class PatientsController < ApplicationController
 
     @mother = @anc_patient.mother rescue nil
 
+    redirect_to "/patients/serial_number/#{@patient.id}" and return if @anc_patient.serial_number.nil?
+
     render :layout => 'dynamic-dashboard'
   end
 
@@ -197,7 +199,19 @@ class PatientsController < ApplicationController
     @attribute.void
     head :ok
   end
-  
+
+  def serial_number
+    @patient = Patient.find(params[:patient_id] || params[:id] || session[:patient_id]) rescue nil
+  end
+
+  def create_serial_number
+    @patient = Patient.find(params[:patient_id] || params[:id] || session[:patient_id]) rescue nil
+
+    @anc_patient.set_identifier("Serial Number", params["serial_number"]) if !params["serial_number"].blank?
+
+    redirect_to "/patients/show/#{@patient.id}" and return
+  end
+
   private
 
 end

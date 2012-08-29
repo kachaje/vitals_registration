@@ -11,13 +11,11 @@
     <option value="/clinic/overview">
       Overview
     </option>
-    <% if current_user.activities.include?("View Reports") %>
-      <option value="/clinic/reports">
-        Reports
-      </option>
-    <% end %>
+    <option value="/clinic/reports">
+      Reports
+    </option>
 
-    <% if current_user.admin? && current_user.activities.include?("Manage Users") %>
+    <% if current_user.admin? # && current_user.activities.include?("Manage Users") %>
       <option value="/clinic/users_tab">
         Administration
       </option>

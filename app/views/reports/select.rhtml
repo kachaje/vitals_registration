@@ -1,0 +1,74 @@
+<html>
+  <head>
+    <title>Select Report</title>
+    <script type="text/javascript" language="javascript"
+    src="/touchscreentoolkit/lib/javascripts/touchScreenToolkit.js" defer  ></script>
+    <meta http-equiv='content-type' content='text/html;charset=UTF-8' />
+    <script type="text/javascript" language="javascript">
+      <!--
+      tstCurrentDate = "<%= Date.today %>";
+      tt_cancel_destination = '/clinic';
+      tt_cancel_show = '/clinic';
+
+      function set_ajaxURL_for_suggestions(control, url, filter_value) {
+        $(control).setAttribute('ajaxURL', url +
+          filter_value.replace(/\s/g, "+") + "&search_string=");
+      }
+
+      //-->
+    </script>
+  </head>
+  <body><div id='content'>
+      <form  action='/reports/report' method="post">
+        <select id="select_by" name="select_by" helpText="Report By:">
+          <option></option>
+          <option>Date of birth</option>
+          <option>Nationality</option>
+          <option>Current District</option>
+          <option>Home District</option>
+          <option>District of birth</option>
+        </select>
+
+        <select id="nationality" name="nationality" helpText="Nationality" condition="__$('select_by').value=='Nationality'">
+          <option></option>
+          <% @nationalities.each do |nationality| %>
+            <option><%= nationality %></option>
+          <% end %>
+        </select>
+
+        <input type="text" id="start_date" name="start_date" helpText="Start Date" 
+               field_type="date" condition="__$('select_by').value=='Date of birth'" />
+
+        <input type="text" id="end_date" name="end_date" helpText="End Date"
+               field_type="date" condition="__$('select_by').value=='Date of birth'" />
+
+        <input type="text" id="current_region" name="current_region" helpText="Current Region"
+               condition="__$('select_by').value=='Current District'"
+               ajaxURL='/people/region/Region?field=role&value='
+               tt_onUnLoad="set_ajaxURL_for_suggestions('current_district', '/people/district/District?filter_value=',document.getElementById('current_region').value);"/>
+
+        <input type="text" id="current_district" name="current_district" helpText="Current District"
+               condition="__$('select_by').value=='Current District'" 
+               ajaxURL="/people/district/District?search_string=" />
+
+        <input type="text" id="home_region" name="home_region" helpText="Home Region"
+               condition="__$('select_by').value=='Home District'"
+               ajaxURL='/people/region/Region?field=role&value='
+               tt_onUnLoad="set_ajaxURL_for_suggestions('home_district', '/people/district/District?filter_value=',document.getElementById('home_region').value);"/>
+
+        <input type="text" id="home_district" name="home_district" helpText="Home District"
+               condition="__$('select_by').value=='Home District'"
+               ajaxURL="/people/district/District?search_string=" />
+
+        <input type="text" id="birth_region" name="birth_region" helpText="Region of birth"
+               condition="__$('select_by').value=='District of birth'"
+               ajaxURL='/people/region/Region?field=role&value='
+               tt_onUnLoad="set_ajaxURL_for_suggestions('birth_district', '/people/district/District?filter_value=',document.getElementById('birth_region').value);"/>
+
+        <input type="text" id="birth_district" name="birth_district" helpText="District of birth"
+               condition="__$('select_by').value=='District of birth'"
+               ajaxURL="/people/district/District?search_string=" />
+      </form>
+    </div>
+  </body>
+</html>

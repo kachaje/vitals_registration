@@ -63,6 +63,12 @@
           <%= @anc_patient.national_id %>
         </span>
 
+        <div id="patient_card">
+          <span id='serial_number' value="<%= @anc_patient.serial_number %>">
+            Serial Number
+          </span>
+        </div>
+
         <span id='patient_age'>
           <%=
           if @anc_patient.age_in_days == 0

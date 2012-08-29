@@ -21,6 +21,10 @@ module ANCService
       id[0..4] + "-" + id[5..8] + "-" + id[9..-1] rescue id
     end
 
+    def serial_number
+      self.patient.patient_identifiers.find_by_identifier_type(PatientIdentifierType.find_by_name("Serial Number").id).identifier rescue nil
+    end
+
     def national_id_label
       return unless self.national_id
       sex =  self.patient.person.gender.match(/F/i) ? "(F)" : "(M)"
@@ -1403,6 +1407,11 @@ module ANCService
         :person_attribute_type_id => (PersonAttributeType.find_by_name(attribute).id))
     end
 
+    def set_identifier(identifier_type, identifier)
+      PatientIdentifier.create(:patient_id => self.patient.patient_id, :identifier => identifier,
+        :identifier_type => (PatientIdentifierType.find_by_name(identifier_type).id))
+    end
+
     def phone_numbers
       # PersonAttribute.phone_numbers(self.person.person_id)
       home_phone_id       = PersonAttributeType.find_by_name('HOME PHONE NUMBER').person_attribute_type_id
@@ -2137,7 +2146,11 @@ module ANCService
           },
           "patient"=>
             {"identifiers"=>
-              {"diabetes_number"=>""}},
+              {
+              "diabetes_number"=>"",
+              "serial_number"=>(patient_params["identifiers"]["serial_number"] rescue "")
+            }
+          },
           "gender"=> person_params["gender"],
           "birthdate"=> birthdate,
           "birthdate_estimated"=> birthdate_estimated ,
@@ -2166,6 +2179,7 @@ module ANCService
 
     person.patient.patient_identifiers.create("identifier" => national_id,
       "identifier_type" => identifier_type.patient_identifier_type_id) unless national_id.blank?
+
     return person
   end
 

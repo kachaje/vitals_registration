@@ -16,7 +16,7 @@ class ClinicController < GenericClinicController
   end
 
   def reports
-    @reports = [['/reports/select/','Reports']]
+    @reports = [['/reports/select/','Report']]
     # render :template => 'clinic/reports', :layout => 'clinic'
     render :layout => false
   end

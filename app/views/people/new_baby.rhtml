@@ -99,14 +99,14 @@
     :tt_onUnLoad => 'seen(tstCurrentPage);' } %>
 
   <%#= text_field_tag "person[birth_date]", nil,
-    {
-    :helpText => 'Date of Birth',
-    :field_type => 'date',
-    :absoluteMin => "1890-01-01",
-    :min => (Date.today - 50.years),
-    :max => Date.today,
-    :absoluteMax => Date.today,
-    :tt_onUnLoad => 'seen(tstCurrentPage);' }  %>
+  {
+  :helpText => 'Date of Birth',
+  :field_type => 'date',
+  :absoluteMin => "1890-01-01",
+  :min => (Date.today - 50.years),
+  :max => Date.today,
+  :absoluteMax => Date.today,
+  :tt_onUnLoad => 'seen(tstCurrentPage);' }  %>
 
   <%= text_field_tag "person[birth_year]", nil, {
     :helpText => 'Year of Birth',
@@ -144,10 +144,15 @@
     :validationJS => "validateDOB()",
     :validationMessage => 'Please enter a valid date'%>
 
+  <%= text_field_tag "person[patient][identifiers][serial number]", nil, {
+    :helpText => 'Serial Number',
+    :tt_onLoad => "$('nextButton').style.display = 'block';"
+  } %>
+
 
   <!-- Make sure patient is created -->
 
-  <%= hidden_field_tag "person[patient]", "" %>
+  <%#= hidden_field_tag "person[patient]", "" %>
 
   <%= hidden_field_tag "relation", params[:relation] %>
 
